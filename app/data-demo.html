@@ -1,0 +1,69 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Polymer WebApp</title>
+  <meta name="description" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
+
+  <!-- build:css styles/main.css -->
+  <link rel="stylesheet" href="styles/main.css">
+  <!-- endbuild-->
+
+  <script src="bower_components/platform/platform.js"></script>
+  <!-- build:vulcanized elements/elements.vulcanized.html -->
+  <link rel="import" href="elements/elements.html">
+  <!-- endbuild-->
+</head>
+
+<body unresolved class="editor">
+
+  <p>A demo of thelma charts:</p>
+
+  <th-connector >
+    
+
+
+
+    <ul class="fields">
+      <li>URL (sample: http://sepans.com/misc/test.csv): <core-input id="url" placeHolder="URL"></core-input>
+      <li>Filter Rows From: <core-input id="row_from" value=""  placeHolder="Filter Rows From"></core-input>
+      <li>Filter Rows To: <core-input id="row_to" value=""  placeHolder="Filter Rows To"></core-input>
+
+      <li>Filter Columns From: <core-input id="col_from" value=""  placeHolder="Filter Columns From"></core-input>
+      <li>Filter Columns To: <core-input id="col_to" value=""  placeHolder="Filter Columns To"></core-input>
+    </ul>
+
+    <th-csv></th-csv>  
+
+
+    <th-n-bar-chart id="chart" >
+       <th-editor></th-editor>
+    </th-n-bar-chart>
+
+    <th-stacked-chart id="stacked" style="float: right;">
+       <th-editor></th-editor>
+    </th-stacked-chart>
+
+
+    <csv-preview id="sum" style="float: right"></csv-preview>
+
+    <csv-preview id="filtered" style="float: right"></csv-preview>
+
+    <th-basic-function></th-basic-function>
+  
+
+  </th-connector>
+
+
+  <!-- build:js scripts/app.js -->
+  <script src="scripts/app.js"></script>
+  <!-- endbuild-->
+</body>
+
+</html>
+
+

@@ -1,0 +1,11 @@
+{
+  "name": "demo",
+  "version": "0.0.0",
+  "dependencies": {
+    "polymer": "Polymer/polymer#~0.3.5",
+    "thelma-charts": "http://github.com/thelmanews/thelma-charts.git",
+    "thelma-data": "http://github.com/thelmanews/thelma-data.git",
+    "core-ajax": "Polymer/core-ajax#~0.3.5"
+  },
+  "devDependencies": {}
+}
