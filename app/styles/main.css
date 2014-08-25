@@ -3,9 +3,13 @@ body {
 }
 
 body.charts {
-    background-color: #303B49;
+  background-color: #303B49;
   color: #E5E5E5;
 
+}
+
+a, a:visited {
+  color: #555;
 }
 
 body.editor {
@@ -15,21 +19,41 @@ body.editor {
   font-size: 16px;
 }
 ul {
-  margin: 5px 0;
+  margin: 5px 5px;
   padding: 0;
   list-style: none;
+}
+
+.inst {
+ list-style: decimal; 
+ margin-left: 1.1em;
+}
+
+h5 {
+  font-size: 0.9em;
+  margin: 0.5em 0;
+}
+
+h4 a {
+  text-decoration: none;
+}
+
+.chart-container {
+  margin: 0 auto;
+  width: 100%;
 }
 
 
 .hero-unit {
   margin: 50px auto 0 auto;
-  width: 300px;
+  width: 90%;
+  max-width: 500px;
   font-size: 18px;
   font-weight: 200;
   line-height: 30px;
-  background-color: #eee;
+  background-color: #C5C5C5;
   border-radius: 6px;
-  padding: 60px;
+  padding: 20px;
 }
 
 .hero-unit h1 {
