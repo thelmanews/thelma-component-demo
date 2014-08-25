@@ -1,1 +1,1 @@
-!function(a){"use strict";a.addEventListener("polymer-ready",function(){console.log("Polymer is ready to rock!")})}(wrap(document));
+!function(a){"use strict";a.addEventListener("polymer-ready",function(){var b=a.querySelector("th-connector");setTimeout(function(){var c=a.querySelector("#url");if(c&&!c.value&&(c.value="http://sepans.com/misc/test.csv",b)){var d=a.querySelector("th-stacked-chart"),e=a.querySelector("th-csv");console.log(e),d&&e&&b.connectElements(e,"chartDataOutput",d,"chartData")}},12e3)})}(wrap(document));
