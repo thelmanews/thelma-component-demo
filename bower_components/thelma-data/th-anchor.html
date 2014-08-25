@@ -1,0 +1,83 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="th-anchor-imports.html">
+
+
+<polymer-element name="th-anchor" attributes="">
+  <template>
+    <style>
+      :host{
+        font-size: 12px;
+
+      } 
+      #chartData_anchor1 {
+        position: absolute;
+        top: 5px;
+        left: 5px;
+      }
+      #chartData_anchor2 {
+        position: absolute;
+        top: 25px;
+        left: 5px;
+      }
+      .anchor {
+        width: 5px;
+        height: 5px;
+        background-color: #555;
+        cursor: pointer;
+      }
+      
+
+    </style>
+    <div class="anchor_container">
+      <div id="chartData_anchor1" class="anchor"></div>
+      <div id="chartData_anchor2" class="anchor"></div>
+    </div>
+
+  </template>
+
+
+
+  <script>
+
+      Polymer('th-anchor', {
+        elementMeta: {},
+        domReady: function() {
+          var self = this;
+          self.elementToEdit = self.parentNode;
+          self.elementMeta = self.elementToEdit.getMetaData();
+          self.chartData = self.elementToEdit.chartData;
+
+          console.log(jsPlumb);
+          var container = self.shadowDom;//self.elementToEdit;
+
+          var j = jsPlumb.getInstance({
+            container: container
+          });
+
+          console.log(j);
+          var anchor1 = self.$.chartData_anchor1;
+          var anchor1 = self.$.chartData_anchor2;
+
+
+          j.ready(function() {
+            console.log('ready');
+            j.addEndpoint(anchor1);
+            j.addEndpoint(anchor2);
+
+            // j.connect({
+            //   source: anchor1,
+            //   target: anchor2
+            // });
+
+            });
+
+         // j.addEndpoint(anchor);
+
+
+
+        }
+      
+      });
+
+  </script>
+</polymer-element>

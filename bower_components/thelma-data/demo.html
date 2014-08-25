@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <title>thelma-meta-components Demo</title>
+
+  <style>
+  	body {
+  		width: 1000px;
+  		background-color: #f5f5f5;
+  	}
+    ul {
+      margin: 5px 0;
+      padding: 0;
+      list-style: none;
+    }
+  </style>
+
+  <script src="../platform/platform.js"></script>
+  <link rel="import" href="th-editor.html">
+  <link rel="import" href="th-anchor.html">
+  <link rel="import" href="th-connector.html">
+  <link rel="import" href="th-csv.html">
+  <link rel="import" href="th-basic-function.html">
+
+  <link rel="import" href="../thelma-all/thelma_all.html">
+
+</head>
+<body unresolved>
+
+
+ 
+
+<!--   	<th-editor></th-editor>
+ -->
+ 
+
+  <br>
+  
+  <th-connector >
+	  
+
+
+
+    <ul class="fields">
+      <li>URL (sample: http://sepans.com/misc/test.csv): <core-input id="url" placeHolder="URL"></core-input>
+      <li>Filter Rows From: <core-input id="row_from" value=""  placeHolder="Filter Rows From"></core-input>
+      <li>Filter Rows To: <core-input id="row_to" value=""  placeHolder="Filter Rows To"></core-input>
+
+      <li>Filter Columns From: <core-input id="col_from" value=""  placeHolder="Filter Columns From"></core-input>
+      <li>Filter Columns To: <core-input id="col_to" value=""  placeHolder="Filter Columns To"></core-input>
+	  </ul>
+
+	  <th-csv></th-csv>  
+
+
+	  <th-n-bar-chart id="chart" >
+   	 	 <th-editor></th-editor>
+    </th-n-bar-chart>
+
+    <th-stacked-chart id="stacked" style="float: right;">
+       <th-editor></th-editor>
+    </th-stacked-chart>
+
+
+    <csv-preview id="sum" style="float: right"></csv-preview>
+
+    <csv-preview id="filtered" style="float: right"></csv-preview>
+
+    <th-basic-function></th-basic-function>
+	
+
+  </th-connector>
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,152 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../core-ajax/core-ajax.html">
+<link rel="import" href="../core-input/core-input.html">
+<link rel="import" href="../csv-preview/csv-preview.html">
+
+
+<polymer-element name="th-csv" attributes="url filter_row_from filter_row_to filter_col_from filter_col_to data filteredData chartDataOutput" thelma>
+
+  <template>
+  </template>
+  
+
+
+  <script src="../d3/d3.min.js"></script> 
+  <script>
+
+      Polymer('th-csv', {
+        url: '',
+        data: null,
+        filteredData: null,
+        filter_row_from: -1,
+        filter_row_to: -1,
+        filter_col_from: -1,
+        filter_col_to: -1,
+        chartDataOutput: [],
+        observe: {
+          filter_row_from: 'filterCsv',
+          filter_row_to: 'filterCsv',
+          filter_col_from: 'filterCsv',
+          filter_col_to: 'filterCsv'
+        },
+
+        ready: function() {
+          var self = this;
+          console.log('de csv');
+          console.log(this.url);
+
+
+
+        },
+        urlChanged: function() {
+          var self = this;
+
+          var corsurl = self.url.replace(/(ftp|http|https):\/\//,'http://www.corsproxy.com/');
+          //var corsurl = 'http://whateverorigin.org/get?url='+self.url;
+          //self.$.ajax.url = corsurl;
+
+          d3.csv(corsurl, function(d) {
+            
+            self.data = d;
+            self.filterCsv();
+          });
+        },
+
+        filterCsv: function() {
+          var self = this;
+          if(self.data) {
+              if(self.filter_row_from>0 || self.filter_row_to>0 || self.filter_col_from>0 || self.filter_col_to>0) {
+                var from = self.filter_row_from>0 ? self.filter_row_from : 1;
+                var to = self.filter_row_to>0 ? self.filter_row_to : self.data.length + 1;
+
+                var fromCol = self.filter_col_from>0 ? self.filter_col_from : 1;
+                var toCol = self.filter_col_to>0 ? self.filter_col_to : self.data.length + 1;
+
+                console.log(fromCol);
+
+                self.filteredData = self.data.filter(function(d, i) {
+                    if(i + 1>= from  && i + 1<= to  ) {
+                      console.log(i);
+                      return d;
+                    }
+                });
+                self.filteredData = self.filteredData.map(function(d, i) {
+                      
+                      var copy = {}; //JSON.parse(JSON.stringify(d));
+                      var colIndex = 0;
+                      for(key in d) {
+                        if(colIndex + 1>= fromCol  && colIndex + 1<= toCol  ) {
+                          copy[key] = d[key];
+                        }
+
+
+                        colIndex++;
+
+                      }
+                      console.log(copy);
+                      return copy;
+                });
+
+              }
+              else {
+                self.filteredData = self.data;
+              }
+              self.createChartData();
+          }
+        },
+
+        // this should be done by another component which getting the metadata of both does the conversion
+        createChartData: function() {
+
+          var self = this;
+
+          self.chartDataOutput = []; 
+
+          var firstRow = self.filteredData[0];
+          for(key in firstRow) {
+            self.chartDataOutput.push({label: key, value: firstRow[key]});
+
+          }
+          console.log(self.chartDataOutput);
+
+
+
+        },
+          getMetaData: function() {
+                return {
+                  "name": "th-csv",
+                  "description": "Fetches CSV from a source plus ability to filter rows/columns ",
+                  "category":"data",
+                  "version": "0.0.1",
+                  "thumbnail":"csv.jpg", 
+                  "tags":["csv", "data"],
+                  "inputAttr": {
+                    "url":{"friendly":"URL", "type":"String", "default":"", "hint": "http://sepans.com/misc/test.csv"},
+                    "filter_row_from":{"friendly":"Filter Rows From Index", "type":"int", "default":0},
+                    "filter_row_to":{"friendly":"Filter Rows To Index", "type":"int", "default":0},
+                    "filter_col_from":{"friendly":"Filter Columns From Index", "type":"int", "default":0},
+                    "filter_col_to":{"friendly":"Filter Columns To Index", "type":"int", "default":0}
+                  },
+                  "outputAttr": {
+                    "data":{"friendly":"Data", "type":"json"},
+                    "filteredData":{"friendly":"Data after filtering", "type":"json"},
+                    "chartDataOutput":{"friendly":"Data for chart", "type":"json"},
+                  }
+                }
+            }
+
+/*
+        dataReady: function(d) {
+          console.log('data ready');
+          console.log(d.detail.response);
+          this.data = d.detail.response;
+          console.log(this.$.preview);
+          //this.$.preview.data = this.data;
+          //this.$.preview.dataChanged();
+        }
+        */
+      
+      });
+
+  </script>
+</polymer-element>

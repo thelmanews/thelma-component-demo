@@ -1,0 +1,352 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../core-selector/core-selector.html">
+
+
+<polymer-element name="th-connector" attributes="">
+  <template>
+    <style>
+      :host{
+        font-size: 12px;
+
+      } 
+      #chartData_anchor1 {
+        position: absolute;
+        top: 5px;
+        left: 5px;
+      }
+      #chartData_anchor2 {
+        position: absolute;
+        top: 25px;
+        left: 5px;
+      }
+      .anchor {
+        width: 5px;
+        height: 5px;
+        background-color: #555;
+        cursor: pointer;
+      }
+      .item {
+        width: 100%;
+        border-bottom: 1px solid #555;
+        line-height: 1.4em;
+
+      }
+      .panel {
+        border: 1px solid #AAA;
+        background-color: rgba(255,255,255,0.2);
+        padding: 5px;
+        margin: 10px;
+      }
+      .panel .selector {
+        display: inline;
+        margin-right: 10px;
+
+      }
+      .panel core-selector {
+        width: 150px;
+        display: inline-block;
+        vertical-align: top;
+      }
+      .panel .core-selected {
+        color: #BBB;
+        border-bottom: 1px solid #AAA;
+      }
+      .panel label {
+        display: inline-block;
+        vertical-align: top;
+      }
+      .connections {
+        margin-top: 10px;
+      }
+
+      .connections ul {
+        list-style: none;
+        width: 350px;
+        margin: 0;
+      }
+      .connections .del {
+        float: right;
+      }
+
+      .panel #connect {
+        float: right;
+        margin: 10px;
+        display: none;
+
+      }
+
+      a, a:visited {
+        color: #555;
+        text-decoration: none;
+      }
+
+      .panel h3 {
+        font-family: arial;
+        margin: 5px;
+      }
+      ::content  .selected-src-element {
+        border: 1px solid #66CCFF;
+        box-sizing:border-box;
+        -moz-box-sizing:border-box;
+        -webkit-box-sizing:border-box;
+      }
+      ::content  .selected-target-element {
+        border: 1px solid #00FF99  ;
+        box-sizing:border-box;
+        -moz-box-sizing:border-box;
+        -webkit-box-sizing:border-box;
+      }
+      
+      ::content > *:not(ul) {
+        min-width: 20px;
+        min-height: 20px;
+        border: 1px solid #DDD;
+        display: inline-block;
+        position: relative;
+        /* border inside */
+      }
+      
+      
+
+    </style>
+    <div class="connectors">
+    </div>
+
+    <content></content>
+    <div class="panel">
+      <h3>Connection Panel</h3>
+      <div class="from selector">
+        <label for="src_component">From:</label>
+        <core-selector id="src_component">
+          <template repeat="{{el in elements}}">
+            <div class="item">{{el.tagName}}<template if="{{el.id}}">#{{el.id}}</template></div>
+          </template>
+
+        </core-selector>
+        <label for="src_attrs">Attributes:</label>
+        <core-selector id="src_attrs">
+          <template repeat="{{attr in _srcAttrs}}">
+            <div class="item">{{attr}}</div>
+          </template>
+
+        </core-selector>
+      </div>
+      <div class="to selector">
+        <label for="target_component">To:</label>
+        <core-selector id="target_component">
+          <template repeat="{{el in elements}}">
+            <div class="item">{{el.tagName}}<template if="{{el.id}}">#{{el.id}}</template></div>
+          </template>
+
+        </core-selector>
+        <label for="target_attrs">Attributes:</label>
+        <core-selector id="target_attrs">
+          <template repeat="{{attr in _targetAttrs}}">
+            <div class="item">{{attr}}</div>
+          </template>
+
+        </core-selector>
+      </div>
+<!--       <template if="{{_srcPropertySelection && _targetPropertySelection}}">
+ -->        
+          <input type="button" id="connect" value="connect" style="{{(_srcPropertySelection && _targetPropertySelection) ? 'display: block' : ''}}"></input>
+<!--       </template>
+ --> 
+      <div class="connections">
+          <label>connections: <label>
+          <ul>
+          <template repeat="{{connection, index in _connections}}">
+            <li class="connection">{{connection.sourceEl}}->{{connection.sourceProperty}} => 
+                    {{connection.targetEl}}->{{connection.targetProperty}}
+                     <a href="javascript:void(0)" class="del" data-index="{{index}}" on-click={{_deleteConncetionHandler}}>delete</a></li>
+          </template>
+          </ul>
+      </div>
+
+    </div>
+
+  </template>
+
+
+
+  <script>
+
+      Polymer('th-connector', {
+        elements: [],
+        _srcAttrs: [],
+        _targetAttrs: [],
+        _srcElementSelection: null,
+        _srcPropertySelection: null,
+        _targetElementSelection: null,
+        _targetPropertySelection: null,
+        _connections: [],
+
+        domReady: function() {
+          var self = this;
+          
+          self._updateFields();
+
+
+          //var slider = self.querySelector('th-slider');
+          //var donut = self.querySelector('th-donut-chart');
+
+          self.$.src_component.addEventListener('core-select', function() {
+            if(!this.selection) {
+              return;
+            }
+            var prev = self.querySelector('.selected-src-element')
+            if(prev) {
+              prev.classList.remove('selected-src-element');
+            }
+            self.querySelector(this.selection.textContent).classList.add('selected-src-element');
+            self._srcElementSelection = this.selection.textContent;
+            self._srcAttrs = self._displayFeilds(this);
+            self._srcPropertySelection = null;
+
+          });
+          self.$.src_attrs.addEventListener('core-select', function() {
+            if(!this.selection) {
+              return;
+            }
+            self._srcPropertySelection = this.selection.textContent;
+
+          });
+
+
+
+          self.$.target_component.addEventListener('core-select', function() {
+            if(!this.selection) {
+              return;
+            }
+            self._targetElementSelection = this.selection.textContent;
+            var prev = self.querySelector('.selected-target-element')
+            if(prev) {
+              prev.classList.remove('selected-target-element');
+            }
+            self.querySelector(this.selection.textContent).classList.add('selected-target-element');
+            self._targetAttrs = self._displayFeilds(this);
+            self._targetPropertySelection = null;
+
+          });
+          self.$.target_attrs.addEventListener('core-select', function() {
+            if(!this.selection) {
+              return;
+            }
+            self._targetPropertySelection = this.selection.textContent;
+
+          });
+
+          self.$.connect.addEventListener('click', function() {
+            self.connectElements(self._srcElementSelection, self._srcPropertySelection,
+                                 self._targetElementSelection, self._targetPropertySelection);
+
+
+          });
+
+
+
+          
+          
+
+
+          self.connectElements('th-csv','filteredData','#filtered','data');
+
+          //self.connectElements('th-csv','data','#unfiltered','data');
+
+          //self.connectElements('th-csv','chartDataOutput','th-n-bar-chart','chartData');
+
+          self.connectElements('#url','value','th-csv','url');
+
+          self.connectElements('#col_from','value','th-csv','filter_col_from');
+          self.connectElements('#col_to','value','th-csv','filter_col_to');
+          self.connectElements('#row_from','value','th-csv','filter_row_from');
+          self.connectElements('#row_to','value','th-csv','filter_row_to');
+
+
+          self.connectElements('th-csv','data','th-basic-function','dataIn');
+
+
+          
+
+
+        },
+
+        _updateFields: function() {
+
+          var self = this;
+          var boringTags = ['div','ul','li','span','th-editor'];
+
+          var components = self.querySelectorAll('*'); //self.children;
+          [].forEach.call(components, function(el) {
+              if(boringTags.indexOf(el.tagName.toLowerCase())<0) {
+
+
+                self.elements.push(el);
+              }
+              if(typeof el.getMetaData === 'function') {
+              }
+              
+          });
+
+        },
+
+        _displayFeilds: function(selector) {
+          var self = this;
+          var elSelector = selector.selection.textContent;
+          var el = self.querySelector(elSelector);
+          if(!el) {
+            return;
+          }
+          
+          var attrs = el.publish;
+          var attrsObj = [];
+          for(key in attrs) {
+            attrsObj.push(key);
+
+          }
+          return attrsObj;
+          
+        },
+
+        connectElements: function(source, sourceField, target, targetField) {
+
+          var self = this;
+
+          // check if source/target are dom element or query selector string:
+
+          var srcEl = (typeof source === "string") ? self.querySelector(source) : source;
+          var targetEl = (typeof target === "string") ? self.querySelector(target): target;
+
+          var observer = new PathObserver(srcEl, sourceField);
+               observer.open(function(newValue, oldValue) {
+               targetEl[targetField] = newValue;
+
+          });
+
+          //to set the value when elements are connected
+          targetEl[targetField] = srcEl[sourceField];  
+
+          self._connections.push({
+            sourceEl: source,
+            sourceProperty: sourceField,
+            targetEl: target,
+            targetProperty: targetField,
+            observer: observer
+         });
+
+
+        },
+
+        _deleteConncetionHandler: function(e, detail, sender) {
+          var self = this;
+          var index = e.target.getAttribute('data-index');
+          var observer = self._connections[index].observer;
+          observer.close();
+          self._connections.splice(index, 1);
+
+        }
+      
+      });
+
+  </script>
+</polymer-element>

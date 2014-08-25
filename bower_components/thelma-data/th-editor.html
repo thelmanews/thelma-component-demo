@@ -1,0 +1,358 @@
+<link rel="import" href="../polymer/polymer.html">
+
+<link rel="import" href="../polymer-ui-accordion/polymer-ui-accordion.html">
+<link rel="import" href="../core-input/core-input.html">
+
+
+<polymer-element name="th-editor" attributes="">
+  <template>
+    <style>
+      :host{
+        font-size: 12px;
+
+      } 
+      textarea, input { 
+        outline: none; 
+        background-color: rgba(255,255,255,0.3); 
+        border: 0;
+      }
+      .panel {
+        position: absolute;
+        top: 5px;
+        right: -200px;
+        color: black;
+        width: 150px;
+        background: rgba(255,255,255,0.7);
+        z-index: 2;
+        padding: 3px;
+      }
+      .panel label {
+        display: inline-block;
+      }
+
+      .panel ul li {
+        height: 25px;
+      }
+
+      .input-field {
+        width: 50px;
+        float: right;
+
+      }
+
+      ul { 
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      a {
+        color: #555;
+
+      }
+
+      .top_handle {
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        border-top: 1px solid black;
+        border-left: 1px solid black;
+        top: 0;
+        left: 0;
+        z-index: 100;
+
+      }
+
+      #resize_handle {
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        border-bottom: 2px solid black;
+        border-right: 2px solid black;
+        cursor: move;
+        bottom: 0;
+        right: 0;
+        z-index: 100;
+      }
+      .dragging {
+        opacity: 0.5;
+      }
+
+      .polymer-ui-collapsible-header {
+        cursor: pointer;
+      }
+
+    </style>
+    <div class="top_handle"></div>
+    <div id="resize_handle" draggable="true"></div>
+    <div class="panel">
+      <polymer-ui-accordion selected="none">
+      <polymer-ui-collapsible>
+        <div class="polymer-ui-collapsible-header"><h4>Data</h4></div>
+        <div class="content">
+        <template repeat="{{dataItem, index of chartData  }}">
+          <polymer-ui-accordion selected="none">
+            <polymer-ui-collapsible>          
+              <div class="polymer-ui-collapsible-header">{{index}}:</div>
+
+              <ul class="content">
+                <template repeat="{{field in chartDataFields}}">
+                  <li>
+                    <label>{{field.friendly}}:</label>
+
+                      <!--     
+                      core-input not working, error when binding value                  
+
+                      <core-input id="data_{{index}}_{{field.name}}" value="{{field.friendly}}" placeHolder="{{field.friendly}}"></core-input>
+                       -->
+                      <input type="text" class="input-field" id="data_{{index}}_{{field.name}}"  value="{{chartData[index][field.name]}}"> 
+ 
+                  </li>
+                </template>
+                <template if="{{elementMeta.inputAttr.chartData.type=='table-repeating'}}">
+                  <a href="javascript:void(0)" id="remove_data_{{index}}">remove</a>
+                </template>
+
+                <hr>
+              </ul>
+            </polymer-ui-collapsible>
+          </polymer-ui-accordion>
+        </template>
+<!--       
+        for donut chart (not working)
+        <template if="{{elementMeta.inputAttr.chartData.type=='table-repeating'}}">
+
+ -->
+        <a href="javascript:void(0)" id="add_data" class="{{elementToEdit.id}}">Add Datapoint</a>
+
+<!--       </template>
+ -->
+
+        </div>
+      </polymer-ui-collapsible>
+      <polymer-ui-collapsible>
+        <div class="polymer-ui-collapsible-header"><h4>Functions</h4></div>
+        <ul class="content">
+            <li>
+              <a id="reset_function" href="javascript:void(0)">Reset</a>
+            </li>
+            <li>
+              <a id="animate_function" href="javascript:void(0)">Animate</a>
+            </li>
+        </ul>
+      </polymer-ui-collapsible>
+      <polymer-ui-collapsible>
+        <div class="polymer-ui-collapsible-header"><h4>Properties</h4></div>
+        <ul class="content">
+          <template repeat="{{field in propertiesFields}}">
+            <li>
+              <label>{{field}}:</label><input type="text" class="input-field" id="{{field}}"  value="{{elementToEdit[field]}}" disabled> 
+           </li>
+          </template>
+        </ul>
+      </polymer-ui-collapsible>
+    </polymer-ui-accordion>
+
+    </div>
+  </template>
+
+  <script>
+
+      Polymer('th-editor', {
+        elementMeta: {},
+        domReady: function() {
+          var self = this;
+
+          this.elementToEdit = this.parentNode;
+          console.log("this.elementToEdit");
+          console.log(this.elementToEdit);
+          this.elementMeta = this.elementToEdit.getMetaData();
+          this.chartData = this.elementToEdit.chartData;
+          /*
+           NOTE: This property gets out of sync with component when component gets edited!
+           */
+          this.initialState = JSON.parse(this.elementToEdit.getState());
+         // TODO - add observer for other fields
+
+          var observer = new PathObserver(self.elementToEdit, 'chartData');
+          observer.open(function(newValue, oldValue) {
+               console.log(newValue);
+               self.chartData = newValue;
+               console.log(self.chartData);
+
+          });
+
+
+
+          var fieldsObj = this.elementMeta.inputAttr.chartData.fields;
+
+          this.chartDataFields = [];
+          for(key in fieldsObj) {
+            var val = fieldsObj[key];
+            val.name = key;
+            this.chartDataFields.push(val);
+          }
+
+          this.propertiesFields = [];
+          for (key in this.initialState){
+            // Filter unnecessary fields from initialState out
+            // TODO: exclude animateOnInit and animateAfter (left in for now to see if it works)
+            if(key != "color" && key != "chartData" && key != "chartHeight" && key != "chartWidth"){
+              this.propertiesFields.push(key);
+            }
+          }
+
+          /*
+          
+          //on change methods needed for the text feilds to make this work! OR
+          // we can replace all input texts with polymer inputs and get rid of onchange functions
+           
+          var animateObserver = new PathObserver(self.elementToEdit, 'animateOnInit');
+          animateObserver.open(function(newValue, oldValue) {
+               console.log('animateOnInit');
+               console.log(newValue);
+               self.propertiesFields.animateOnInit = newValue;
+               console.log(self.propertiesFields);
+
+          });
+          */
+         
+         self.$.reset_function.addEventListener('click',function() {
+            self.elementToEdit.reset();
+         });
+
+         self.$.animate_function.addEventListener('click',function() {
+            self.elementToEdit.animate();
+         });
+
+
+          var addDataBtn = this.shadowRoot.querySelector('#add_data');//self.$.add_data;
+          console.log(addDataBtn);
+          if(addDataBtn) {
+            addDataBtn.addEventListener('click', function() {
+              console.log('button clicked:');
+              console.log(this);
+              //var tempData = this.chartData;
+              var newDataRow = {};
+              for(dataIndex in self.chartDataFields) {
+                var dataDef = self.chartDataFields[dataIndex];
+                newDataRow[dataDef.name] = dataDef.default;
+              }
+
+              self.chartData.push(newDataRow);
+
+              console.log(self.chartData);
+              console.log(self.elementToEdit);
+
+              // delay is needed to make sure the element is created (callback available?!)
+              self.async(function() {
+
+                self._bindRemoveBtn(self.chartData.length-1);
+
+                for(i in this.chartDataFields)
+                {
+                  self._bindDataField(i,self.chartData.length-1);
+                }
+
+
+              }, null, 500);  
+
+
+
+            //   console.log(self.chartData);
+
+            });
+          }
+
+          this.async(function() {
+            for(j in this.chartData) {
+                for(i in this.chartDataFields)
+                {
+                  self._bindDataField(i, j);
+                }
+                self._bindRemoveBtn(j);
+
+            }
+
+          }, null, 500);
+
+          this.$.resize_handle.addEventListener('dragstart', function(e) {
+            console.log('drag start');
+            this.classList.add('dragging');
+          });
+
+          this.$.resize_handle.addEventListener('dragend', function(e) {
+            console.log('dragged');
+            this.classList.remove('dragging');
+            console.log(e);
+
+
+            var chartWidth = self.elementToEdit.chartWidth;
+            var chartHeight = self.elementToEdit.chartHeight;
+
+            chartWidth = chartWidth + e.layerX;
+            chartHeight = chartHeight + e.layerY;
+
+            console.log(chartWidth);
+            console.log(chartHeight);
+
+            self.elementToEdit.chartWidth = chartWidth ;
+            self.elementToEdit.chartHeight = chartHeight ;
+
+            self.elementToEdit.resize();
+
+          });
+
+         // this.$.resize_handle.css.left = self.elementToEdit.chartWidth;
+         // this.$.resize_handle.css.top = self.elementToEdit.chartHeight;
+
+
+
+        },
+        _bindDataField: function(fieldIndex, rowIndex) {
+
+          var self = this;
+
+          var fieldName = this.chartDataFields[fieldIndex].name
+          this.shadowRoot.querySelector('#data_'+rowIndex+'_'+fieldName).addEventListener("keyup", function() {
+              // console.log('chage');
+              self.chartDataChanged();
+          });
+
+        },
+        _bindRemoveBtn: function(index) {
+          var self = this;
+          var removeBtn = self.shadowRoot.querySelector('#remove_data_'+index);
+          if(removeBtn) {
+            removeBtn.addEventListener("click", function() {
+              console.log('clicked');
+              var id = this.id;
+              var indx = id.substring(id.lastIndexOf('_')+1,id.length);  // possible to seal j in closure?
+              self.chartData.splice(indx, 1);
+
+            });
+          }
+
+        },
+        chartDataChanged: function() {
+          console.log('value changed');
+
+          // with data binding this shouldn't be needed...
+          
+          //console.log(this.elementToEdit.chartData);
+          //this.elementToEdit.chartData = this.chartData;
+          //console.log(this.elementToEdit.chartData);
+
+          // even with binding this line is needed because observers only do shallow observation
+          this.elementToEdit.updateData();
+         
+
+         // this.elementToEdit.animate();  // needed for donut chart because it doesn't have updateData method
+         //TODO instead put this.animate in th-d3-chart to be picked up by donut chart?!
+
+        }
+
+      });
+
+  </script>
+</polymer-element>

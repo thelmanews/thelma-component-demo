@@ -1,0 +1,119 @@
+<link rel="import" href="../polymer/polymer.html">
+
+
+<polymer-element name="th-basic-function" attributes="dataIn dataOut functionName chartDataOutput" thelma>
+
+  <template>
+  </template>
+  
+
+
+  <script src="../d3/d3.min.js"></script> 
+  <script>
+
+      Polymer('th-basic-function', {
+        dataIn: null,
+        dataOut: null,
+        chartDataOutput: null,
+        /**
+         * Function name: sum, avg 
+         * @type {String}
+         */
+        functionName: 'sum',
+
+        ready: function() {
+          var self = this;
+          console.log('function');
+          if(self.dataIn!=null) {
+            self.calculate();
+          }
+
+
+
+        },
+        dataInChanged: function() {
+          var self = this;
+          self.calculate();
+
+        },
+        functionNameChanged: function() {
+          var self = this;
+          self.calculate();
+
+        },
+
+        calculate: function() {
+          var self = this;
+          console.log(self.dataIn);
+          var result = {};
+          for(i in self.dataIn) {
+              var row = self.dataIn[i];
+              //var j = 0;
+              var rowArray = [];
+              for(key in row) {
+                  if(result[key] === undefined) {
+                      result[key]= parseFloat(row[key]);
+                  }
+                  else {
+                      result[key]+= parseFloat(row[key]);
+
+                  }
+              }
+              
+          }
+          console.log(result);
+          self.dataOut = [result];
+          self.createChartData();
+
+        },
+
+        // this should be done by another component which getting the metadata of both does the conversion
+        createChartData: function() {
+
+          var self = this;
+
+          self.chartDataOutput = []; 
+
+          var firstRow = self.dataOut[0];
+          for(key in firstRow) {
+            self.chartDataOutput.push({label: key, value: firstRow[key]});
+
+          }
+          console.log(self.chartDataOutput);
+
+
+
+        },
+
+
+
+ 
+        getMetaData: function() {
+              return {
+                "name": "th-csv",
+                "description": "Fetches CSV from a source plus ability to filter rows/columns ",
+                "category":"data",
+                "version": "0.0.1",
+                "thumbnail":"csv.jpg", 
+                "tags":["csv", "data"],
+                "inputAttr": {
+                  "url":{"friendly":"URL", "type":"String", "default":"", "hint": "http://sepans.com/misc/test.csv"},
+                  "filter_row_from":{"friendly":"Filter Rows From Index", "type":"int", "default":0},
+                  "filter_row_to":{"friendly":"Filter Rows To Index", "type":"int", "default":0},
+                  "filter_col_from":{"friendly":"Filter Columns From Index", "type":"int", "default":0},
+                  "filter_col_to":{"friendly":"Filter Columns To Index", "type":"int", "default":0}
+                },
+                "outputAttr": {
+                  "data":{"friendly":"Data", "type":"json"},
+                  "filteredData":{"friendly":"Data after filtering", "type":"json"},
+                  "chartDataOutput":{"friendly":"Data for chart", "type":"json"},
+                }
+              }
+          }
+
+
+      
+      });
+
+  </script>
+</polymer-element>

@@ -1,0 +1,19 @@
+{
+  "name": "thelma-components",
+  "keywords": "seed, polymer, web-components",
+  "main": "thelma-components.html",
+  "dependencies": {
+    "polymer": "Polymer/polymer#0.3.4",
+    "platform": "Polymer/platform#0.3.4"
+  },
+  "homepage": "https://github.com/thelmanews/thelma-core",
+  "_release": "ceeb480b79",
+  "_resolution": {
+    "type": "branch",
+    "branch": "master",
+    "commit": "ceeb480b7991c3ec0c43c869ebf74f0927374303"
+  },
+  "_source": "https://github.com/thelmanews/thelma-core.git",
+  "_target": "*",
+  "_originalSource": "https://github.com/thelmanews/thelma-core.git"
+}
