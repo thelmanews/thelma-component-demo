@@ -1,0 +1,1576 @@
+<div hidden><!--
+Copyright (c) 2014 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+<!--
+
+The `core-style` element helps manage styling inside other elements and can 
+be used to make themes. The `core-style` element can be either a producer 
+or consumer of styling. If it has its `id` property set, it's a producer. 
+Elements that are producers should include css styling as their text content.
+If a `core-style` has its `ref` property set, it's a consumer. A `core-style`
+typically sets its `ref` property to the value of the `id` property of the
+`core-style` it wants to use. This allows a single producer to be used in 
+multiple places, for example, in many different elements.
+
+It's common to place `core-style` producer elements inside HTMLImports.
+Remote stylesheets should be included this way, the &#64;import css mechanism is
+not currently supported.
+
+Here's a basic example:
+
+    <polymer-element name="x-test" noscript>
+      <template>
+        <core-style ref="x-test"></core-style>
+        <content></content>
+      </template>
+    </polymer-element>
+
+The `x-test` element above will be styled by any `core-style` elements that have
+`id` set to `x-test`. These `core-style` producers are separate from the element
+definition, allowing a user of the element to style it independent of the author's 
+styling. For example:
+
+    <core-style id="x-test">
+      :host {
+        backgound-color: steelblue;
+      }
+    </core-style>
+
+The content of the `x-test` `core-style` producer gets included inside the
+shadowRoot of the `x-test` element. If the content of the `x-test` producer
+`core-style` changes, all consumers of it are automatically kept in sync. This
+allows updating styling on the fly.
+
+The `core-style` element also supports bindings and it is the producer 
+`core-style` element is the model for its content. Here's an example:
+
+    <core-style id="x-test">
+      :host {
+        background-color: {{myColor}};
+      }
+    </core-style>
+    <script>
+      document._currentScript.ownerDocument.getElementById('x-test').myColor = 'orange';
+    </script>
+
+Finally, to facilitate sharing data between `core-style` elements, all
+`core-style` elements have a `g` property which is set to the global 
+`CoreStyle.g`. Here's an example:
+
+    <core-style id="x-test">
+      :host {
+        background-color: {{g.myColor}};
+      }
+    </core-style>
+    <script>
+      CoreStyle.g.myColor = 'tomato';
+    </script>
+
+Finally, one `core-style` can be nested inside another. The `core-style`
+element has a `list` property which is a map of all the `core-style` producers.
+A `core-style` producer's content is available via its `cssText` property. 
+Putting this together:
+
+    <core-style id="common">
+      :host {
+        font-family: sans-serif;
+      }
+    </core-style>
+
+    <core-style id="x-test">
+      {{list.common.cssText}}
+
+      :host {
+        background-color: {{g.myColor}};
+      }
+    </core-style>
+
+
+@group Polymer Core Elements
+@element core-style
+@homepage github.io
+-->
+
+<!--
+Copyright (c) 2014 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<!--
+Copyright (c) 2014 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+<style shim-shadowdom="">html /deep/ [layout][horizontal],html /deep/ [layout][vertical]{display:-ms-flexbox;display:-webkit-flex;display:flex}html /deep/ [layout][horizontal][inline],html /deep/ [layout][vertical][inline]{display:-ms-inline-flexbox;display:-webkit-inline-flex;display:inline-flex}html /deep/ [layout][horizontal]{-ms-flex-direction:row;-webkit-flex-direction:row;flex-direction:row}html /deep/ [layout][horizontal][reverse]{-ms-flex-direction:row-reverse;-webkit-flex-direction:row-reverse;flex-direction:row-reverse}html /deep/ [layout][vertical]{-ms-flex-direction:column;-webkit-flex-direction:column;flex-direction:column}html /deep/ [layout][vertical][reverse]{-ms-flex-direction:column-reverse;-webkit-flex-direction:column-reverse;flex-direction:column-reverse}html /deep/ [layout][wrap]{-ms-flex-wrap:wrap;-webkit-flex-wrap:wrap;flex-wrap:wrap}html /deep/ [layout][wrap-reverse]{-ms-flex-wrap:wrap-reverse;-webkit-flex-wrap:wrap-reverse;flex-wrap:wrap-reverse}html /deep/ [flex]{-ms-flex:1;-webkit-flex:1;flex:1}html /deep/ [flex][auto]{-ms-flex:1 1 auto;-webkit-flex:1 1 auto;flex:1 1 auto}html /deep/ [flex][none]{-ms-flex:none;-webkit-flex:none;flex:none}html /deep/ [flex][one]{-ms-flex:1;-webkit-flex:1;flex:1}html /deep/ [flex][two]{-ms-flex:2;-webkit-flex:2;flex:2}html /deep/ [flex][three]{-ms-flex:3;-webkit-flex:3;flex:3}html /deep/ [flex][four]{-ms-flex:4;-webkit-flex:4;flex:4}html /deep/ [flex][five]{-ms-flex:5;-webkit-flex:5;flex:5}html /deep/ [flex][six]{-ms-flex:6;-webkit-flex:6;flex:6}html /deep/ [flex][seven]{-ms-flex:7;-webkit-flex:7;flex:7}html /deep/ [flex][eight]{-ms-flex:8;-webkit-flex:8;flex:8}html /deep/ [flex][nine]{-ms-flex:9;-webkit-flex:9;flex:9}html /deep/ [flex][ten]{-ms-flex:10;-webkit-flex:10;flex:10}html /deep/ [flex][eleven]{-ms-flex:11;-webkit-flex:11;flex:11}html /deep/ [flex][twelve]{-ms-flex:12;-webkit-flex:12;flex:12}html /deep/ [layout][start]{-ms-flex-align:start;-webkit-align-items:flex-start;align-items:flex-start}html /deep/ [layout][center]{-ms-flex-align:center;-webkit-align-items:center;align-items:center}html /deep/ [layout][end]{-ms-flex-align:end;-webkit-align-items:flex-end;align-items:flex-end}html /deep/ [layout][start-justified]{-ms-flex-pack:start;-webkit-justify-content:flex-start;justify-content:flex-start}html /deep/ [layout][center-justified]{-ms-flex-pack:center;-webkit-justify-content:center;justify-content:center}html /deep/ [layout][end-justified]{-ms-flex-pack:end;-webkit-justify-content:flex-end;justify-content:flex-end}html /deep/ [layout][around-justified]{-ms-flex-pack:around;-webkit-justify-content:space-around;justify-content:space-around}html /deep/ [layout][justified]{-ms-flex-pack:justify;-webkit-justify-content:space-between;justify-content:space-between}html /deep/ [self-start]{-ms-align-self:flex-start;-webkit-align-self:flex-start;align-self:flex-start}html /deep/ [self-center]{-ms-align-self:center;-webkit-align-self:center;align-self:center}html /deep/ [self-end]{-ms-align-self:flex-end;-webkit-align-self:flex-end;align-self:flex-end}html /deep/ [self-stretch]{-ms-align-self:stretch;-webkit-align-self:stretch;align-self:stretch}html /deep/ [block]{display:block}html /deep/ [hidden]{display:none!important}html /deep/ [relative]{position:relative}html /deep/ [fit]{position:absolute;top:0;right:0;bottom:0;left:0}body[fullbleed]{margin:0;height:100vh}html /deep/ [segment],html /deep/ segment{display:block;position:relative;-webkit-box-sizing:border-box;-ms-box-sizing:border-box;box-sizing:border-box;margin:1em .5em;padding:1em;background-color:#fff;-webkit-box-shadow:0 0 0 1px rgba(0,0,0,.1);box-shadow:0 0 0 1px rgba(0,0,0,.1);border-radius:5px}</style>
+
+<script src="../bower_components/polymer/polymer.js"></script>
+<!--<link rel="import" href="../polymer-dev/polymer.html">--> 
+
+<polymer-element name="core-style" hidden assetpath="../bower_components/core-style/">
+<script>(function(){window.CoreStyle=window.CoreStyle||{g:{},list:{},refMap:{}};Polymer("core-style",{publish:{ref:""},g:CoreStyle.g,refMap:CoreStyle.refMap,list:CoreStyle.list,ready:function(){if(this.id){this.provide()}else{this.registerRef(this.ref);if(!window.ShadowDOMPolyfill){this.require()}}},attached:function(){if(!this.id&&window.ShadowDOMPolyfill){this.require()}},provide:function(){this.register();if(this.textContent){this._completeProvide()}else{this.async(this._completeProvide)}},register:function(){var i=this.list[this.id];if(i){if(!Array.isArray(i)){this.list[this.id]=[i]}this.list[this.id].push(this)}else{this.list[this.id]=this}},_completeProvide:function(){this.createShadowRoot();this.domObserver=new MutationObserver(this.domModified.bind(this)).observe(this.shadowRoot,{subtree:true,characterData:true,childList:true});this.provideContent()},provideContent:function(){this.ensureTemplate();this.shadowRoot.textContent="";this.shadowRoot.appendChild(this.instanceTemplate(this.template));this.cssText=this.shadowRoot.textContent},ensureTemplate:function(){if(!this.template){this.template=this.querySelector("template:not([repeat]):not([bind])");if(!this.template){this.template=document.createElement("template");var n=this.firstChild;while(n){this.template.content.appendChild(n.cloneNode(true));n=n.nextSibling}}}},domModified:function(){this.cssText=this.shadowRoot.textContent;this.notify()},notify:function(){var s$=this.refMap[this.id];if(s$){for(var i=0,s;s=s$[i];i++){s.require()}}},registerRef:function(ref){this.refMap[this.ref]=this.refMap[this.ref]||[];this.refMap[this.ref].push(this)},applyRef:function(ref){this.ref=ref;this.registerRef(this.ref);this.require()},require:function(){var cssText=this.cssTextForRef(this.ref);if(cssText){this.ensureStyleElement();if(this.styleElement._cssText===cssText){return}this.styleElement._cssText=cssText;if(window.ShadowDOMPolyfill){this.styleElement.textContent=cssText;cssText=Platform.ShadowCSS.shimStyle(this.styleElement,this.getScopeSelector())}this.styleElement.textContent=cssText}},cssTextForRef:function(ref){var s$=this.byId(ref);var cssText="";if(s$){if(Array.isArray(s$)){var p=[];for(var i=0,l=s$.length,s;i<l&&(s=s$[i]);i++){p.push(s.cssText)}cssText=p.join("\n\n")}else{cssText=s$.cssText}}if(s$&&!cssText){console.warn("No styles provided for ref:",ref)}return cssText},byId:function(id){return this.list[id]},ensureStyleElement:function(){if(!this.styleElement){this.styleElement=window.ShadowDOMPolyfill?this.makeShimStyle():this.makeRootStyle()}if(!this.styleElement){console.warn(this.localName,"could not setup style.")}},makeRootStyle:function(){var style=document.createElement("style");this.appendChild(style);return style},makeShimStyle:function(){var host=this.findHost(this);if(host){var name=host.localName;var style=document.querySelector("style["+name+"="+this.ref+"]");if(!style){style=document.createElement("style");style.setAttribute(name,this.ref);document.head.appendChild(style)}return style}},getScopeSelector:function(){if(!this._scopeSelector){var selector="",host=this.findHost(this);if(host){var typeExtension=host.hasAttribute("is");var name=typeExtension?host.getAttribute("is"):host.localName;selector=Platform.ShadowCSS.makeScopeSelector(name,typeExtension)}this._scopeSelector=selector}return this._scopeSelector},findHost:function(node){while(node.parentNode){node=node.parentNode}return node.host||wrap(document.documentElement)},cycle:function(rgb,amount){if(rgb.match("#")){var o=this.hexToRgb(rgb);if(!o){return rgb}rgb="rgb("+o.r+","+o.b+","+o.g+")"}function cycleChannel(v){return Math.abs((Number(v)-amount)%255)}return rgb.replace(/rgb\(([^,]*),([^,]*),([^,]*)\)/,function(m,a,b,c){return"rgb("+cycleChannel(a)+","+cycleChannel(b)+", "+cycleChannel(c)+")"})},hexToRgb:function(hex){var result=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);return result?{r:parseInt(result[1],16),g:parseInt(result[2],16),b:parseInt(result[3],16)}:null}})})();</script>
+</polymer-element>
+
+<script>var Themes={};Themes.belize={foreground1:"#FFFFFF",foreground2:"#FFFFFF",background:"#303B49",accent0:"#0198E1",accent1:"#3EBFEF",accent2:"#86CBF0",accent3:"#FCCE63",accent4:"#D7AA7F",accent5:"#FDE054",accent6:"#B1B9BF",accent7:"#969696",font:"'proxima-nova', sans-serif",mapColors:["rgb(239,243,255)","rgb(198,219,239)","rgb(158,202,225)","rgb(107,174,214)","rgb(66,146,198)","rgb(33,113,181)","rgb(8,69,148)"]};Themes.berlin={foreground1:"#FFFFFF",foreground2:"#FFFFFF",background:"#303B49",accent0:"#E64852",accent1:"#5B778D",accent2:"#1FB0DF",accent3:"#66BCE9",accent4:"#DADCE0",accent5:"#F8EB21",font:"'franklin-gothic-urw-cond', sans-serif",mapColors:["rgb(239,243,255)","rgb(198,219,239)","rgb(158,202,225)","rgb(107,174,214)","rgb(66,146,198)","rgb(33,113,181)","rgb(8,69,148)"]};Themes.baja={foreground1:"#FFFFFF",foreground2:"#FFFFFF",background:"#F7931C",accent0:"#E21B7A",accent1:"#2C4EC6",accent2:"#FFDFB0",accent3:"#AF1264",accent4:"#185BEF",font:"'franklin-gothic-urw-cond', sans-serif",mapColors:["rgb(241,238,246)","rgb(212,185,218)","rgb(201,148,199)","rgb(223,101,176)","rgb(231,41,138)","rgb(206,18,86)","rgb(145,0,63)"]};Themes.bali={foreground1:"#303030",foreground2:"#FFFFFF",background:"#FCF0AC",accent0:"#FCD700",accent1:"#0ADD78",accent2:"#F21700",accent3:"#0C2851",accent4:"#AAA20B",accent5:"#303030",font:"'franklin-gothic-urw-cond', sans-serif",mapColors:["rgb(255,255,178)","rgb(254,217,118)","rgb(254,178,76)","rgb(253,141,60)","rgb(252,78,42)","rgb(227,26,28)","rgb(177,0,38)"]};Themes.barbados={foreground1:"#2B2B2B",foreground2:"#DADCE0",background:"#F6F7F7",accent0:"#5AC3B9",accent1:"#118C7A",accent2:"#3A2850",accent3:"#065B4D",accent4:"#2AA898",accent5:"#454A50",accent6:"#DADCE0",font:"'franklin-gothic-urw-cond', sans-serif",mapColors:["rgb(240,249,232)","rgb(204,235,197)","rgb(168,221,181)","rgb(123,204,196)","rgb(78,179,211)","rgb(43,140,190)","rgb(8,88,158)"]};Themes.dublin={foreground1:"#2B2B2B",foreground2:"#FFFFFF",background:"#CDD1D6",accent0:"#3AA5DD",accent1:"#52B64F",accent2:"#F2673A",accent3:" #454A50",accent4:"#969696",accent5:"#F6F7F7",font:"'franklin-gothic-urw-cond', sans-serif",mapColors:["rgb(239,243,255)","rgb(198,219,239)","rgb(158,202,225)","rgb(107,174,214)","rgb(66,146,198)","rgb(33,113,181)","rgb(8,69,148)"]};Themes.madrid={foreground1:"#FFFFFF",foreground2:"#FFFFFF",background:"#301633",accent0:"#F22749",accent1:"#65E077",accent2:"#FFDFB0",accent3:"#751354",accent4:"#29D35D",font:"'franklin-gothic-urw-cond', sans-serif",mapColors:["rgb(255,255,204)","rgb(217,240,163)","rgb(173,221,142)","rgb(120,198,121)","rgb(65,171,93)","rgb(35,132,67)","rgb(0,90,50)"]};Themes.miami={foreground1:"#FFFFFF",foreground2:"#FFFFFF",background:"#34393D",accent0:"#F8EB21",accent1:"#8BC540",accent2:"#1EC3EF",accent3:"#E64852",accent4:"#B1B9BF",accent5:"#6B7278",font:"'proxima-nova', sans-serif",mapColors:["rgb(255,255,204)","rgb(199,233,180)","rgb(127,205,187)","rgb(65,182,196)","rgb(29,145,192)","rgb(34,94,168)","rgb(12,44,132)"]};Themes.napa={foreground1:"#FFFFFF",foreground2:"#FFFFFF",background:"#301633",accent0:"#E21B7A",accent1:"#2C4EC6",accent2:"#FFDFB0",accent3:"#AF1264",accent4:"#185BEF",font:"'proxima-nova', sans-serif",mapColors:["rgb(254,235,226)","rgb(252,197,192)","rgb(250,159,181)","rgb(247,104,161)","rgb(221,52,151)","rgb(174,1,126)","rgb(122,1,119)"]};Themes.oslo={foreground1:"#FFFFFF",foreground2:"#FFFFFF",background:"#505559",accent0:"#1EC3EF",accent1:"#F8EB21",accent2:"#B1B9BF",accent3:"#8BC540",accent4:"#E64852",font:"'proxima-nova', sans-serif",mapColors:["rgb(239,243,255)","rgb(198,219,239)","rgb(158,202,225)","rgb(107,174,214)","rgb(66,146,198)","rgb(33,113,181)","rgb(8,69,148)"]};Themes.salvador={foreground1:"#FFFFFF",foreground2:"#FFFFFF",background:"#6D134B",accent0:"#ED1C4B",accent1:"#D9C026",accent2:"#F3E923",accent3:"#D01C5F",accent4:"#901c67",font:"'proxima-nova', sans-serif",mapColors:["rgb(241,238,246)","rgb(212,185,218)","rgb(201,148,199)","rgb(223,101,176)","rgb(231,41,138)","rgb(206,18,86)","rgb(145,0,63)"]};Themes.seattle={foreground1:"#2B2B2B",foreground2:"#B1B9BF",background:"#F2F2F2",accent0:"#2A7DBF",accent1:"#52B64F",accent2:"#E64852",accent3:"#B1B9BF",accent4:"#DADCE0",font:"'proxima-nova', sans-serif",mapColors:["rgb(241,238,246)","rgb(208,209,230)","rgb(166,189,219)","rgb(116,169,207)","rgb(54,144,192)","rgb(5,112,176)","rgb(3,78,123)"]};Themes.vancouver={foreground1:"#2B2B2B",foreground2:"#FFFFFF",background:"#CDD1D6",accent0:"#3AA5DD",accent1:"#084874",accent2:"#52B64F",accent3:"#2A7DBF",accent4:"#2298CC",accent5:"#454A50",accent6:"#F6F7F7",font:"'proxima-nova', sans-serif",mapColors:["rgb(241,238,246)","rgb(208,209,230)","rgb(166,189,219)","rgb(116,169,207)","rgb(54,144,192)","rgb(5,112,176)","rgb(3,78,123)"]};CoreStyle.g.theme=Themes.belize;CoreStyle.g.theme.allAccents=[CoreStyle.g.theme.accent0,CoreStyle.g.theme.accent1,CoreStyle.g.theme.accent2,CoreStyle.g.theme.accent3,CoreStyle.g.theme.accent4,CoreStyle.g.theme.accent5,CoreStyle.g.theme.accent6];</script>
+
+<core-style id="theme">
+  
+  /**** FONTS ****/
+
+  :host { 
+    color: {{g.theme.foreground1}};
+    font-family: {{g.theme.font}};
+    display: inline-block;
+    position: relative;
+    font-size: 12pt;
+    margin: 0;
+    padding: 0;
+  }
+
+ .headline {
+    font-size: 1.7em;
+    font-weight: 500;
+    line-height: 1.1;
+  }
+
+  .mainpoint {
+    font-size: 1.2em;
+    font-weight: 400;
+    line-height: 1.1;
+  }
+
+  .submainpoint { 
+    font-size: 1.12em;
+    font-weight: 400;
+    line-height: 1.1;
+  }
+
+  .subpoint {
+    font-size: 1.0em;
+    font-weight: 300;
+    line-height: 1.1;
+  }
+
+  .chart {
+    font-size: 0.95em;
+    font-weight: 400;
+    text-align: center;
+  }
+
+
+  .label, .defaultvalue, .wrapped-values {
+    font-size: 0.85em;
+    font-weight: 300;
+  }
+
+  .wrapped-labels {
+    word-break: normal;
+    -ms-word-break: normal;
+    word-break: normal;
+    -webkit-hyphens: auto;
+    -moz-hyphens: auto;
+    hyphens: auto;
+  }
+
+  .caps {
+    text-transform: uppercase;
+  }
+
+  .center {
+    text-align: center;
+  }
+
+  a {
+    color: {{g.theme.accent0}}
+  }
+
+  .background-color {
+    background-color: {{g.theme.background}};
+  }
+
+  .d3-slider {
+     border-color: {{g.theme.foreground1}};
+
+  } 
+
+  .d3-slider-handle {
+   
+
+    background: {{g.theme.foreground2}};
+    border: 1px solid {{g.theme.foreground1}};
+
+  }
+
+
+  /**** CHART STYLES ****/
+
+  .axis, .xLabel, .yLabel {
+    fill: {{g.theme.foreground1}};
+    stroke: {{g.theme.foreground1}};
+    color:{{g.theme.foreground1}};
+  }
+
+  .tick {
+    fill: {{g.theme.foreground1}};
+    color:{{g.theme.foreground1}};
+
+  }
+  
+  .data0 {
+    fill: {{g.theme.accent0}};  
+    stroke: {{g.theme.accent0}};  
+    color: {{g.theme.accent0}};  
+  }
+
+  .data1 {
+    fill: {{g.theme.accent1}};
+    stroke: {{g.theme.accent1}};
+    color: {{g.theme.accent1}};  
+  }
+
+  .data2 {
+    fill: {{g.theme.accent2}};
+    stroke: {{g.theme.accent2}};
+    color: {{g.theme.accent2}};  
+  }
+
+  .data3 {
+    fill: {{g.theme.accent3}};
+    stroke: {{g.theme.accent3}};
+    color: {{g.theme.accent3}};  
+  }
+
+  .data4 {
+    fill: {{g.theme.accent4}};
+    stroke: {{g.theme.accent4}};
+    color: {{g.theme.accent4}};  
+  }
+
+  .data5 {
+    fill: {{g.theme.accent5}};
+    stroke: {{g.theme.accent5}};
+    color: {{g.theme.accent5}};  
+  }
+
+  .data6 {
+    fill: {{g.theme.accent6}};
+    stroke: {{g.theme.accent6}};
+    color: {{g.theme.accent6}};  
+  }
+
+  .data7 {
+    fill: {{g.theme.accent7}};
+    stroke: {{g.theme.accent7}};
+    color: {{g.theme.accent7}};  
+  }
+
+  .data8 {
+    fill: {{g.theme.accent8}};
+    stroke: {{g.theme.accent8}};
+    color: {{g.theme.accent8}};  
+  }
+
+  .data9 {
+    fill: {{g.theme.accent9}};
+    stroke: {{g.theme.accent9}};
+    color: {{g.theme.accent9}};  
+  }
+
+
+  .fill-background {
+    fill: {{g.theme.background}};
+  }
+
+  .fill-foreground {
+    fill: {{g.theme.foreground1}};
+  }
+
+  .fill-foreground2 {
+    fill: {{g.theme.foreground2}};
+  }
+
+  .stroke-background {
+    stroke: {{g.theme.background}};
+  }
+  
+  .stroke-foreground {
+    stroke: {{g.theme.foreground1}};
+  }
+
+  .no-fill {
+    fill: none;
+  }
+
+  .no-stroke {
+    stroke: none;
+  }
+
+
+  /**** QUOTEBOX STYLES ****/
+
+  .quotebox {
+    border: 2px solid {{g.theme.foreground2}};
+    border-bottom: none;
+  }
+
+  .img-container, .border-bottom {
+    border-top: 2px solid {{g.theme.foreground2}};
+  } 
+
+  .img { 
+    border: 4px solid {{g.theme.accent0}};
+  }
+
+
+  /**** TWEET STYLES ****/
+
+  .tweetbox {
+    border: 3px solid {{g.theme.foreground2}}; 
+    border-bottom: none;
+  }
+
+  .icon {
+    width: 22px;
+    position: absolute;
+    margin-top: -11px;
+    margin-left: 75%; 
+  }
+
+  .icon-wrapper {
+     border-top: 3px solid {{g.theme.foreground2}};
+  }
+
+  /**** STORIES STYLES ****/
+  .story {
+    background-color: {{g.theme.accent0}}
+  }
+
+
+  /**** MAP STYLES ****/
+  .mark {
+    fill: {{g.theme.foreground1}};
+  }
+  .map-border {
+
+    stroke: {{g.theme.foreground1}};
+    fill: {{g.theme.background}};
+
+  }
+  .active {
+    fill: {{g.theme.foreground2}};
+    stroke-width: 2px;
+  }
+}
+ 
+}
+
+</core-style></div><div hidden>
+
+
+
+
+
+<!--      
+  multiple inheritance is not supported by polymer so moving this function to th-d3-chart
+<polymer-element name="th-has-datapoint" attributes="">
+  <script>
+      Polymer('th-has-datapoint', { 
+
+       extractElementDataPoints : function() {
+            var barInfos = this.querySelectorAll('th-data-point');
+            var dataFromElements = [];
+            [].forEach.call(barInfos, function(dataPointEl) {
+                var dataPoint = {};
+                [].forEach.call(dataPointEl.attributes, function(attr) {
+                  console.log(attr);
+                  dataPoint[attr.name] = attr.value;
+                });
+                console.log(dataPoint);
+                dataFromElements.push(dataPoint);
+            });
+
+            return dataFromElements;
+
+        }
+
+      });
+  </script>
+</polymer-element>
+-->
+
+<polymer-element name="th-animated" attributes="animateOnInit animateAfter completed animate getState reset color" resetable="true" animatable="true" assetpath="../bower_components/thelma-core/">
+  
+  <script>Polymer("th-animated",{animationDelay:1e3,animateAfter:0,animateOnInit:false,initialized:false,domReady:function(){this.init();if(this.animateOnInit||this.animateAfter>0){if(this.animateAfter>0){var self=this;setTimeout(function(){self.animate()},self.animateAfter)}else{this.animate()}}this.initialized=true;this.fire("th-ready",{msg:"element ready",element:this})},init:function(){},reset:function(){},animate:function(){},completed:function(){},getState:function(){var currentState={};for(var attribute in this.publish){currentState[attribute]=this[attribute]}return JSON.stringify(currentState)}});</script>
+
+</polymer-element>
+
+<polymer-element name="th-data-point" attributes="label value color displayValue image" assetpath="../bower_components/thelma-core/">
+</polymer-element>
+
+      
+
+<polymer-element name="th-d3-chart" extends="th-animated" attributes="chartData chartWidth chartHeight chartOptions defaultDisplayValues" assetpath="../bower_components/thelma-charts/">
+  
+  <script src="../bower_components/d3/d3.min.js"></script> 
+  <script src="../bower_components/thelma-charts/utility.js"></script> 
+  <script>Polymer("th-d3-chart",Platform.mixin({chartData:[{label:"medicaid",value:20,display_value:"$20",color:""},{label:"gap",value:40,display_value:"$40",color:""},{label:"sub",value:10,display_value:"$10",color:""}],chartWidth:200,chartHeight:300,observe:{},chartDataChanged:function(){this.validateChartData(this);if(!this.initialized){return}if(this.errors.length==0){this.updateData()}else{console.log("error validating data")}},chartWidthChanged:function(){if(!this.initialized){return}this.resize()},chartHeightChanged:function(){if(!this.initialized){return}this.resize()},resize:function(){},updateData:function(){},extractElementDataPoints:function(){var barInfos=this.querySelectorAll("th-data-point");var dataFromElements=[];[].forEach.call(barInfos,function(dataPointEl){var dataPoint={};[].forEach.call(dataPointEl.attributes,function(attr){dataPoint[attr.name]=attr.value});dataFromElements.push(dataPoint)});if(this.validateElementDataPoints(dataFromElements)){this.chartData=dataFromElements}},validateElementDataPoints:function(data){if(data.length<1){return false}return true}},Thelma.chartValidation,Thelma.chartUtils));</script>
+
+</polymer-element>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<polymer-element name="th-donut-chart" extends="th-d3-chart" attributes="chartSize" assetpath="../bower_components/thelma-charts/">
+  <template>
+    <core-style ref="theme"></core-style>
+    <style>:host{display:inline-block;position:relative}#chart text{font-size:14px}#data_errors{font-size:14px;color:red;position:absolute;top:0;left:0}</style>
+
+      <svg id="chart"></svg>
+
+      <ul id="data_errors">
+      </ul>
+
+      <!-- to allow embeded th-editor component -->
+      <content select="th-editor"></content> 
+      
+  </template>
+  <script>Polymer("th-donut-chart",{chartData:[{value:65,color:""}],chartSize:"200",init:function(){var self=this;var margin={right:0,left:0,label:3},width=self.chartSize*.95-margin.left-margin.right,height=width,twoPi=2*Math.PI,progress=0,total=100,formatPercent=d3.format(".0%"),outerRadius=height*.49,innerRadius=height*.32;self._prevProgress=0;self.height=height;var foreground,text,arc;self.inTransition=false;arc=d3.svg.arc().startAngle(0).innerRadius(innerRadius).outerRadius(outerRadius);var chart_svg=self.$.chart;var svg=d3.select(chart_svg);var container=svg.attr("width",width).attr("height",height).append("g").attr("transform","translate("+width/2+","+height*.49+")");var meter=container.append("g").attr("class","progress-meter");meter.append("path").attr("class","fill-foreground2").attr("d",arc.endAngle(twoPi));foreground=meter.append("path").attr("class","data0").style("fill",self.chartData[0].color).style("stroke",self.chartData[0].color);text=meter.append("text").attr("class","percent data0").attr("text-anchor","middle").attr("dy",".35em").style("fill",self.chartData[0].color).style("stroke",self.chartData[0].color);self.foreground=foreground;self.formatPercent=formatPercent;self.arc=arc;self.twoPi=twoPi;self.text=text},reset:function(){var self=this},animate:function(){var self=this;var progress=self.chartData[0].value;var total=100;var i=d3.interpolate(self._prevProgress/total,progress/total);self.foreground.transition().duration(1e3).tween("progress",function(){return function(t){var progress1=i(t);self.foreground.attr("d",self.arc.endAngle(self.twoPi*progress1));self.text.text(self.formatPercent(progress1))}}).each("end",function(){self.fire("th-animationend",{element:self})});self._prevProgress=progress},chartSpecificDataValidate:function(){var self=this;if(!chartData.length||chartData.length<1){errors.push({input:currentVal,msg:"Chart data needs to be an array with one data element."})}var errors=[],currentVal=self.chartData[0].value;if(currentVal===undefined){errors.push({input:currentVal,msg:"Please provide a value for the chart."})}else if(currentVal>100||currentVal<0){errors.push({input:currentVal,msg:currentVal+" is invalid. You must enter a number from 1 to 100.",corrected:function(){return currentVal>100?100:1}()})}return errors},updateData:function(){var self=this;self.animate()},getMetaData:function(){return{name:"th-donut-chart",description:"Thelma donut chart",category:"graph",version:"0.0.1",thumbnail:"single-donut.jpg",tags:["graph","pie","data","animated"],inputAttr:{chartWidth:{friendly:"Width",type:"int","default":260},chartHeight:{friendly:"Height",type:"int","default":300},chartData:{friendly:"Data",type:"flat-object",fields:{value:{friendly:"Value",type:"int","default":65}},"default":{value:65}}}}}});</script>
+</polymer-element></div><div hidden>
+
+
+<polymer-element name="th-n-bar-chart" extends="th-d3-chart" attributes="showHorizontalAxis" assetpath="../bower_components/thelma-charts/">
+
+	<template>
+	    <core-style ref="theme"></core-style>
+	    <style>:host{display:inline-block;position:relative}#data_errors{display:none;font-size:14px;color:red;position:absolute;top:0;left:0}</style>
+
+	    <svg id="chart"></svg>
+
+	    <ul id="data_errors">
+	    </ul> 
+
+	    <!-- to allow embeded th-editor component -->
+	    <content select="th-editor"></content> 
+	    
+	</template>
+
+	<script>(function(){var staticObj={};Thelma.BarFamilyPrivateStaticMethods.apply(staticObj);staticObj._setElementSizes=function(polymerObj){var margin=polymerObj.dims.margin,width=polymerObj.dims.width,height=polymerObj.dims.height,x=polymerObj.x,y=polymerObj.y;staticObj._setupContainerSize(polymerObj);while(polymerObj.chartData.length>polymerObj.colors.count){polymerObj.addMoreColors(polymerObj)}polymerObj.bars.attr("class",function(d,i){return"bar data"+i}).attr("fill",function(d,i){return polymerObj.colors.accents[i]}).attr("stroke",function(d,i){return polymerObj.colors.accents[i]}).style("fill",function(d){return d.color}).style("stroke",function(d){return d.color});polymerObj.labels.attr("class",function(d,i){return"label data"+i}).attr("fill",function(d,i){return polymerObj.colors.accents[i]}).attr("stroke",function(d,i){return polymerObj.colors.accents[i]}).style("fill",function(d){return d.color}).style("stroke",function(d){return d.color});polymerObj.values.attr("class",function(d,i){return"value data"+i}).attr("text-anchor","middle").attr("font-size",polymerObj.dims.values.size+"px").attr("fill",function(d,i){return polymerObj.colors.accents[i]}).attr("stroke",function(d,i){return polymerObj.colors.accents[i]}).style("fill",function(d){return d.color}).style("stroke",function(d){return d.color});polymerObj.horAxis.attr("x1",0).attr("y1",polymerObj.dims.height-y(0)).attr("x2",polymerObj.dims.width).attr("y2",polymerObj.dims.height-y(0))};staticObj._setupElements=function(polymerObj){polymerObj.svg=d3.select(polymerObj.$.chart);polymerObj.container=polymerObj.svg.selectAll(".container").data([1]).enter().append("g").attr("class","container");polymerObj.bars=polymerObj.container.selectAll(".bar").data(polymerObj.chartData).enter().append("rect").attr("class","bar").attr("height",0).attr("y",function(d){return polymerObj.y(0)});polymerObj.labels=polymerObj.container.selectAll(".label").data(polymerObj.chartData).enter().append("text").attr("class","label").attr("text-anchor",function(){return polymerObj.dims.labels.angle>0?"left":"middle"}).attr("transform",function(d,i){var xPos=polymerObj.x(i)+polymerObj.dims.bars.width/2;var yPos=polymerObj.dims.height+polymerObj.dims.margin.label;var rotation=polymerObj.dims.labels.angle;if(rotation>0){xPos=xPos-7;yPos=yPos-3}return"translate("+xPos+","+yPos+") rotate("+rotation+")"});polymerObj.values=polymerObj.container.selectAll(".value").data(polymerObj.chartData).enter().append("text").attr("class","value").attr("y",polymerObj.dims.height).style("opacity",0);var horClass="horAxis"+(polymerObj.showHorizontalAxis?" stroke-foreground":"");polymerObj.horAxis=polymerObj.container.selectAll(".horAxis").data([1]).enter().append("line").attr("class",horClass)};staticObj._setupContainerSize=function(polymerObj){var margin=polymerObj.dims.margin,width=polymerObj.dims.width,height=polymerObj.dims.height;polymerObj.svg.attr("width",width+margin.left+margin.right).attr("height",height+margin.top+margin.bottom);polymerObj.container.attr("transform","translate("+margin.left+","+margin.top+")")};Polymer("th-n-bar-chart",{chartData:[{label:"Player",value:15,color:""},{label:"Vendor",value:-20,color:""},{label:"Mascot",value:-35,color:""}],showHorizontalAxis:false,init:function(){var self=this;self.dims=self.setupDimensions(self);self.dims=staticObj.setupBarLabelDims(self.dims,self.chartData,1,1.3);self.colors=self.getColors();var margin=self.dims.margin,width=self.dims.width,height=self.dims.height;self.dataLength=self.chartData.length;var scales=self.simpleScaleBuilder(width,height,self.chartData);var x=scales.x;var y=scales.y;self.y=y;self.x=x;staticObj._setupElements(self);staticObj._setElementSizes(self);self.labels.text(function(d){return d.label});self.values.text(function(d){return d.display_value?d.display_value:d.value})},reset:function(hard){var self=this,height=self.dims.height;if(hard){self.bars.attr("y",height).attr("height",0);self.values.attr("y",height)}else{self.bars.transition().duration(1e3).attr("y",height).attr("height",0).style("opacity",0);self.values.transition().duration(1e3).attr("y",height).style("opacity",0)}},animate:function(){var self=this;var y=self.y;var height=self.dims.height;self.bars.transition().duration(this.animationDelay).attr("x",function(d,i){return self.x(i)}).attr("y",function(d){return height-Math.max(y(d.value),y(0))}).attr("width",self.dims.bars.width).attr("height",function(d){return Math.abs(y(d.value)-y(0))}).style("opacity",1);self.values.transition().duration(this.animationDelay).attr("x",function(d,i){return self.x(i)+self.dims.bars.width/2}).attr("y",function(d){return d.value<0?height-y(0)-self.dims.values.margin:height-y(d.value)-self.dims.values.margin}).style("opacity",1);self.labels.transition().duration(this.animationDelay).attr("text-anchor",function(){return self.dims.labels.angle>0?"left":"middle"}).attr("transform",function(d,i){var xPos=self.x(i)+self.dims.bars.width/2;var yPos=height+self.dims.margin.label;var rotation=self.dims.labels.angle;if(rotation>0){xPos=xPos-7;yPos=yPos-3}return"translate("+xPos+","+yPos+") rotate("+rotation+")"});self.horAxis.transition().duration(self.animationDelay).attr("x1",0).attr("y1",self.dims.height-y(0)).attr("x2",self.dims.width).attr("y2",self.dims.height-y(0))},resize:function(){var self=this;self.dims=self.setupDimensions(self);staticObj._setupContainerSize(self);var margin=self.dims.margin,width=self.dims.width,height=self.dims.height;var scales=self.simpleScaleBuilder(width,height,self.chartData);var x=scales.x;var y=scales.y;self.y=y;self.x=x;self.dims=staticObj.setupBarLabelDims(self.dims,self.chartData,1,1.3);staticObj._setElementSizes(self);self.animate()},updateData:function(){var self=this;var scales=self.simpleScaleBuilder(self.dims.width,self.dims.height,self.chartData);var x=scales.x;var y=scales.y;self.y=y;self.x=x;var width=self.dims.width,height=self.dims.height;self.bars=self.container.selectAll(".bar").data(self.chartData);self.labels=self.container.selectAll(".label").data(self.chartData);self.values=self.container.selectAll(".value").data(self.chartData);self.dims=staticObj.setupBarLabelDims(self.dims,self.chartData,1,1.3);staticObj._setupContainerSize(self);if(self.dataLength!=self.chartData.length){self.dataLength=self.chartData.length;self.dims.barWidth=Math.min(70,self.dims.width/self.dataLength/(1+self.dims.barGap));self.bars.enter().append("rect").attr("class","bar").attr("height",0).attr("y",height).attr("width",0).style("opacity",0).attr("x",function(d){return width});self.labels.enter().append("text").attr("class","label");self.values.enter().append("text").attr("class","value").attr("y",height);self.bars.exit().transition().duration(1e3).attr("height",0).attr("y",height).attr("x",width).style("opacity",0).remove();self.labels.exit().transition().duration(1e3).style("opacity",0).remove();self.values.exit().transition().duration(1e3).style("opacity",0).remove()}self.resize();self.labels.text(function(d){return d.label});self.values.text(function(d){return d.display_value?d.display_value:d.value});self.animate()},chartSpecificDataValidate:function(){var errors=[],numOfBars=this.chartData.length;if(numOfBars===0){errors.push({input:numOfBars,msg:"Please provide at least one value for the chart."})}else{for(var i=0;i<numOfBars;i++){if(!this.chartData[i].value){errors.push({input:this.chartData,msg:"You must include a value for every bar."})}if(!this.chartData[i].label){errors.push({input:this.chartData,msg:"You must include a label for every bar."})}}}return errors},getMetaData:function(){return{name:"th-n-bar-chart",description:"Thelma n bar chart",category:"chart",version:"0.0.1",thumbnail:"nbar.jpg",tags:["chart","bar"],inputAttr:{chartWidth:{friendly:"Width",type:"int","default":200},chartHeight:{friendly:"Height",type:"int","default":300},chartData:{friendly:"Data",type:"table-repeating",rows:2,fields:{label:{friendly:"Label",type:"string","default":"Player"},value:{friendly:"Value",type:"int","default":15},display_value:{friendly:"Display Value",type:"string","default":""}},"default":[{label:"Player",value:15,display_value:"$15"},{label:"Vendor",value:20,display_value:"$20"},{label:"Mascot",value:45,display_value:"$45"}]}}}}})})();</script>
+</polymer-element>
+</div><div hidden>
+
+
+<polymer-element name="th-line-graph-single" extends="th-d3-chart" attributes="lineStyle animateStyle fillArea xAxisLine 
+  xAxisLabels yAxisLabels yAxisLine axisAnimation dataPosition joyStick yAxisMin yAxisMax" assetpath="../bower_components/thelma-charts/">
+  <template>
+    <core-style ref="theme"> </core-style>
+    <style>#chart{padding:5px;box-sizing:border-box}.xLabel,.yLabel{font-size:.6em;font-weight:300}circle{cursor:pointer}@-webkit-keyframes pulse{from{stroke-opacity:.9}50%{stroke-opacity:.4}to{stroke-opacity:.9}}.note{width:100%;position:relative;box-sizing:border-box;padding:0 20px}.pulse{fill-opacity:0;-webkit-animation-name:pulse;-webkit-animation-duration:3s;-webkit-animation-iteration-count:infinite;animation-timing-function:linear}</style>
+    <svg id="chart"></svg> 
+    <div id="info"></div> 
+
+    <!-- to allow embeded th-editor component -->
+    <content select="th-editor"></content> 
+
+  </template> 
+  
+  <!-- this is for d3.tip, if used --> 
+  <!-- <script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script> -->
+
+  <script>(function(){var staticObj={_scaleBuilder:function(polymerObj){polymerObj.maxLabel=polymerObj.getBoundaryValue(polymerObj,"label",d3.max);polymerObj.minLabel=polymerObj.getBoundaryValue(polymerObj,"label",d3.min);polymerObj.maxValue=polymerObj.yAxisMax!=""&&polymerObj.yAxisMax!=NaN?polymerObj.yAxisMax:polymerObj.getBoundaryValue(polymerObj,"value",d3.max);polymerObj.minValue=polymerObj.yAxisMin!=""&&polymerObj.yAxisMin!=NaN?polymerObj.yAxisMin:polymerObj.getBoundaryValue(polymerObj,"value",d3.min);polymerObj.y=d3.scale.linear().domain([polymerObj.minValue,polymerObj.maxValue]).range([15,polymerObj.dims.height-(polymerObj.dims.margin.top+polymerObj.dims.margin.bottom+polymerObj.dims.joystick.d)]),polymerObj.x=d3.scale.linear().domain([polymerObj.minLabel,polymerObj.maxLabel]).range([polymerObj.dims.margin.left,polymerObj.dims.width]);polymerObj.numXticks=Math.min(5,polymerObj.chartData.length);polymerObj.numYticks=4},_setupElements:function(polymerObj){var width=polymerObj.dims.width,height=polymerObj.dims.height,y=polymerObj.y,x=polymerObj.x;g=polymerObj.g,svg=polymerObj.svg,data=polymerObj.chartData,line=polymerObj.line,startingLine=polymerObj.startingLine,animateStyle=polymerObj.animateStyle;polymerObj.currentPos={};polymerObj.svg=d3.select(polymerObj.$.chart);var g=polymerObj.svg.append("g");polymerObj.g=g;polymerObj.note=d3.select(polymerObj.$.info).append("div").attr("class","note");polymerObj.xAxis=g.append("line").attr("class","axis").attr("stroke-width",2).attr("opacity",function(d){return polymerObj.xAxisLine?1:0});polymerObj.yAxis=g.append("line").attr("x1",0).attr("x2",0);polymerObj.xLabels=g.selectAll(".xLabel").data(x.ticks(polymerObj.numXticks)).enter().append("text").attr("class","xLabel axis").text(function(d){return d}).attr("opacity",function(d){return polymerObj.xAxisLabels?1:0}).attr("text-anchor","middle");polymerObj.yLabels=g.selectAll(".yLabel").data(y.ticks(polymerObj.numYticks)).enter().append("text").attr("class","yLabel axis").text(function(d){return d}).attr("dy",4).attr("opacity",function(d){return polymerObj.axisAnimation||!polymerObj.yAxisLabels?0:1}).style("text-anchor","middle");polymerObj.displayValue=g.append("g").append("text").attr("class","fill-foreground").attr("opacity",function(){return polymerObj.joyStick?.7:0});polymerObj.areaPath=g.append("path");polymerObj.linePath=g.selectAll(".data0").data(data).enter().append("path").attr("class","data0 no-fill").attr("stroke-width","3").style("fill","none").style("stroke",polymerObj.color);polymerObj.circles=g.selectAll(".circle").data(data).enter().append("circle").attr("class","circle data0 stroke-foreground").attr("r",0).style("fill",polymerObj.color);polymerObj.tips=g.selectAll(".tip").data(data).enter().append("text").attr("class","tip label fill-foreground").attr("text-anchor","middle")},_setupContainerSize:function(polymerObj){polymerObj.svg.attr("width",polymerObj.dims.width+polymerObj.dims.margin.right+polymerObj.dims.margin.left).attr("height",polymerObj.dims.height);polymerObj.g.attr("transform","translate(0,"+(polymerObj.dims.height-polymerObj.dims.margin.top)+")")},_setupElementSizes:function(polymerObj){var width=polymerObj.dims.width,height=polymerObj.dims.height,y=polymerObj.y,x=polymerObj.x,data=polymerObj.chartData,valueSize=Math.min(width,height)/3;data=polymerObj.defaultDisplayValues?polymerObj.setDisplayVals(polymerObj):data;staticObj._setupContainerSize(polymerObj);polymerObj.xAxis.attr("x1",x(polymerObj.minLabel)).attr("y1",0).attr("x2",x(polymerObj.maxLabel)).attr("y2",0);polymerObj.yAxis.attr("y1",function(d){return polymerObj.axisAnimation?y(0):-1*y(polymerObj.minValue)}).attr("y2",function(d){return polymerObj.axisAnimation?y(0):-1*y(polymerObj.maxValue)});polymerObj.xLabels.text(function(d){return d}).attr("x",function(d){return x(d)}).attr("y",polymerObj.dims.margin.top/2);polymerObj.yLabels.text(function(d){return d}).attr("transform",function(d){var yPos=polymerObj.axisAnimation?0:-1*y(d);return"translate(0,"+yPos+") rotate(-90)"});polymerObj.displayValue.attr("text-anchor",function(){return polymerObj.dataPosition==="left"?"start":"end"}).attr("x",function(){return polymerObj.dataPosition==="left"?polymerObj.dims.margin.left:width-polymerObj.dims.margin.left}).attr("y",-(height-valueSize-polymerObj.dims.margin.top-polymerObj.dims.joystick.d)).attr("font-size",valueSize).text(polymerObj.currentPos.value);polymerObj.startingLine=d3.svg.line().x(function(d){return x(d.label)}).y(0).interpolate(polymerObj.lineStyle);polymerObj.line=d3.svg.line().x(function(d){return x(d.label)}).y(function(d){return-y(d.value)}).interpolate(polymerObj.lineStyle);polymerObj.areaDataStart=d3.svg.area().x(function(d){return x(d.label)}).y1(0).interpolate(polymerObj.lineStyle);polymerObj.areaData=d3.svg.area().x(function(d){return x(d.label)}).y1(function(d){return-y(d.value)}).interpolate(polymerObj.lineStyle);if(polymerObj.animateStyle=="draw"){polymerObj.linePath.data(data).attr("d",polymerObj.line(data));if(polymerObj.fillArea){polymerObj.areaPath.datum(data).attr("class","data0 area").attr("opacity",0).attr("d",polymerObj.areaData).style("fill",polymerObj.color).style("stroke",polymerObj.color)}}else{polymerObj.linePath.data(data).attr("d",function(){return polymerObj.fillArea?polymerObj.line(data):polymerObj.startingLine(data)}).attr("class","data0 no-fill").attr("stroke-width","2.5").attr("opacity",function(){return polymerObj.fillArea?0:1}).style("stroke",polymerObj.color);if(polymerObj.fillArea){polymerObj.areaPath.datum(data).attr("class","area data0").attr("opacity",0).attr("d",polymerObj.areaDataStart).style("fill",polymerObj.color).style("stroke",polymerObj.color)}}polymerObj.circles.attr("stroke-width",3).attr("cx",function(d){return x(d.label)}).attr("cy",function(d){return-1*y(d.value)});if(polymerObj.joystick){polymerObj.joystick.select("rect").attr("height",height-36)}polymerObj.setStartingPosition()}};Polymer("th-line-graph-single",{lineStyle:"cardinal",animateStyle:"draw",fillArea:false,xAxisLine:true,xAxisLabels:true,yAxisLine:false,yAxisLabels:false,yAxisMin:"",yAxisMax:"",axisAnimation:false,dataPosition:"left",joyStick:true,color:"",defaultDisplayValues:false,chartData:[{label:2010,value:104,display_value:"$104",note:""},{label:2011,value:108,display_value:"$108",note:""},{label:2012,value:107,display_value:"$107",note:""},{label:2013,value:110,display_value:"$110",note:""},{label:2014,value:112,display_value:"$112",note:""}],init:function(){var self=this;self.dims=self.setupDimensions(self);self.dims.joystick={r:8,d:16};self.dims.margin.right=10;self.dims.margin.left=15;self.dims.margin.top+=self.dims.joystick.d;self.dims.margin.bottom+=self.dims.joystick.d;self.dims.width=self.dims.width=Math.max(100,self.chartWidth-self.dims.margin.left-self.dims.margin.right);staticObj._scaleBuilder(self);staticObj._setupElements(self);staticObj._setupElementSizes(self);self.dataLength=self.chartData.length},resize:function(){var self=this;self.dims=self.setupDimensions(self);self.dims.margin.right=10;self.dims.margin.left=15;self.dims.margin.top+=self.dims.joystick.d;self.dims.margin.bottom+=self.dims.joystick.d;self.dims.width=self.dims.width=Math.max(100,self.chartWidth*.95-self.dims.margin.left-self.dims.margin.right);staticObj._scaleBuilder(self);staticObj._setupElementSizes(self);if(self.joyStick){self.moveJoystick()}else{self.showTooltips()}self.animate()},updateData:function(){var self=this,data=self.chartData;staticObj._scaleBuilder(self);var x=self.x,y=self.y;self.yLabels=self.g.selectAll(".yLabel").data(y.ticks(self.numYticks));self.xLabels=self.g.selectAll(".xLabel").data(x.ticks(self.numXticks));self.linePath=self.g.selectAll("path.data0").data(data);self.circles=self.g.selectAll(".circle").data(data);self.xAxis=self.g.selectAll("path.axis").data(data);self.tips=self.g.selectAll(".tip").data(data);self.xLabels.enter().append("text").attr("class","xLabel axis").text(function(d){return d}).attr("text-anchor","middle").attr("x",function(d){return x(d)}).attr("y",self.dims.margin.top/2);self.yLabels.enter().append("text").attr("class","yLabel axis").text(function(d){return d}).attr("dy",4).attr("opacity",function(d){return self.axisAnimation?0:1}).style("text-anchor","start");self.xAxis.attr("x1",x(self.minLabel)).attr("y1",0).attr("x2",x(self.maxLabel)).attr("y2",0);self.circles.enter().append("circle").attr("class","circle data0 stroke-foreground").attr("r",function(){return self.joyStick?0:4}).attr("r",0).style("fill",self.color);self.tips.enter().append("text").attr("class","tip label fill-foreground").attr("text-anchor","middle");self.linePath.exit().remove();self.circles.exit().remove();self.xLabels.exit().remove();self.yLabels.exit().remove();self.xAxis.exit().remove();self.tips.exit().remove();staticObj._setupElementSizes(self);if(self.joyStick){self.moveJoystick()}else{self.showTooltips()}self.animate()},reset:function(){var self=this,g=self.g,svg=self.svg;g.selectAll("path, circle, text, rect, line").remove();d3.select(self.$.info).selectAll("div, li").remove();svg.selectAll("g.joyStick").remove();staticObj._setupElements(self);staticObj._setupElementSizes(self)},animate:function(){var self=this;self.animateAxis();self.animateLines();if(self.joyStick){self.moveJoystick();self.showCurrentData(self.currentPos,firstTime=true)}else{self.showTooltips()}},animateLines:function(){var self=this;var g=self.g,svg=self.svg,data=self.chartData,x=self.x,y=self.y,startingLine=self.startingLine,animateStyle=self.animateStyle;if(animateStyle==="draw"){if(self.fillArea){self.areaPath.style("opacity",.7)}var totalLength=self.linePath.node().getTotalLength();self.linePath.attr("stroke-dasharray",totalLength+" "+totalLength).attr("stroke-dashoffset",totalLength).transition().duration(1e3).ease("linear").attr("stroke-dashoffset",0)}else{if(self.fillArea){self.areaPath.transition().duration(1e3).ease("linear").attr("stroke-dashoffset",0).attr("d",self.areaData).attr("opacity",.7)}self.linePath.transition().duration(function(){return self.fillArea?5e3:1e3}).attr("d",self.line(data)).attr("opacity",1)}if(!self.joyStick){self.circles.style("fill",self.color).style("stroke",self.color).transition().delay(1e3).duration(500).attr("class","data0 circle").attr("r",4)}},animateAxis:function(){},setStartingPosition:function(){var self=this,data=self.chartData;for(var i=0;i<data.length;i++){if(data[i].note){self.currentPos.label=data[i].label;self.currentPos.note=data[i].note;self.currentPos.value=data[i].display_value?data[i].display_value:"";break}else{self.currentPos.label=data[0].label;self.currentPos.note=data[0].note;self.currentPos.value=data[0].display_value?data[0].display_value:""}}},showCurrentData:function(currentPos,firstTime){var self=this,g=self.g,label=currentPos.closestLabel||currentPos.label,value=currentPos.val,note=currentPos.note;g.selectAll(".circle").transition().delay(function(){return firstTime?1e3:0}).duration(300).attr("r",function(d){if(parseInt(d.label)==parseInt(label)){note=d.note;value=d.display_value?d.display_value:"";return 4}else{return 0}});self.note.transition().duration(100).style("opacity",1);self.note.html(note);self.displayValue.text(value)},moveJoystick:function(){var self=this,svg=self.svg,x=self.x,w=self.dims.width,h=self.dims.height,g=self.g;self.currentPos.x=x(self.currentPos.label);if(!self.joystick){self.joystick=svg.selectAll("g.joystick").data([{x:self.currentPos.x}]).enter().append("g").attr("class","joystick").attr("width",w);var drag=d3.behavior.drag().origin(Object).on("drag",dragMove).on("dragend",dragEnd);self.joystick.append("circle").attr("class","target-area").attr("r",25).attr("cx",self.currentPos.x).attr("cy",self.dims.joystick.r).style("fill-opacity",0);self.joystick.append("circle").attr("class","target").attr("r",8).attr("cx",self.currentPos.x).attr("cy",self.dims.joystick.r).attr("class","target pulse stroke-foreground fill-background").attr("stroke-width",4.5);self.joystick.append("rect").attr("y",self.dims.joystick.r*2+2).attr("x",self.currentPos.x-1.5).attr("height",h-self.dims.joystick.d-self.dims.margin.bottom).attr("width",3).attr("class","fill-foreground").attr("opacity",.4);self.joystick.call(drag);self.lastPosX=self.joystick.select("circle.target").attr("cx")}function dragMove(d){var x=self.x;self.joystick.selectAll(".target").attr("class","target stroke-foreground fill-background").attr("fill-opacity",0);d3.select(this).selectAll("circle").attr("cx",d.x=Math.max(self.dims.margin.left,Math.min(self.dims.width,d3.event.x)));self.currentPos.x=self.joystick.selectAll("circle").attr("cx");d3.select(this).select("rect").attr("x",self.currentPos.x-1).attr("opacity",1);if(self.currentPos.x<self.lastPosX){self.direction="left";self.lastPosX=self.currentPos.x}else{self.direction="right";self.lastPosX=self.currentPos.x}g.selectAll(".circle").attr("r",function(d){if(Math.abs(x(d.label)-parseInt(self.currentPos.x))<3){self.currentPos.note=d.note;self.currentPos.value=d.display_value?d.display_value:"";self.displayValue.text(self.currentPos.value);self.note.transition().duration(100).style("opacity",1);self.note.html(d.note);return 4}else{return 0}});if(self.direction=="right"){self.currentPos.closestX=d3.min(self.circles[0],function(d){var cx=parseInt(d3.select(d).attr("cx"));return cx-self.currentPos.x>=0?cx:Number.MAX_VALUE})}else{self.currentPos.closestX=d3.max(self.circles[0],function(d){var cx=parseInt(d3.select(d).attr("cx"));return cx-self.currentPos.x<0?cx:Number.MIN_VALUE})}}function dragEnd(){var x=self.x;self.joystick.selectAll("circle").transition().duration(50).attr("cx",self.currentPos.closestX);self.joystick.selectAll(".target").attr("class","pulse target stroke-foreground fill-background");self.joystick.select("rect").transition().duration(50).attr("x",self.currentPos.closestX-1).attr("opacity",.4);self.currentPos.closestLabel=Math.round(x.invert(self.currentPos.closestX));self.showCurrentData(self.currentPos)}},showTooltips:function(){var self=this,g=self.g,data=self.chartData,x=self.x,y=self.y;self.tips.text(function(d){return d.display_value?d.display_value:""}).attr("x",function(d){return x(d.label)}).attr("y",function(d){return-y(d.value)-15}).attr("opacity",0).transition().delay(1e3).duration(500).attr("opacity",1)},chartSpecificDataValidate:function(){}})})();</script>
+
+</polymer-element>
+</div><div hidden>
+
+
+<polymer-element name="th-spectrum-chart" extends="th-d3-chart" assetpath="../bower_components/thelma-charts/">
+
+	<template>
+	    <core-style ref="theme"></core-style>
+	    <style>:host{display:inline-block;position:relative}#data_errors{display:none;font-size:14px;color:red;position:absolute;top:0;left:0}</style>
+
+	    <svg id="chart"></svg>
+
+	    <ul id="data_errors">
+	    </ul>  
+
+	    <!-- to allow embeded th-editor component -->
+	    <content select="th-editor"></content> 
+	    
+	</template>
+
+	<script>Polymer("th-spectrum-chart",{chartData:[{label:"Medicaid",range_min_value:10,range_min_display_value:"$10",range_max_value:50,range_max_display_value:"$50",color:""},{label:"Federal",pattern:"stripe",range_min_value:40,range_min_display_value:"$40",range_max_value:60,range_max_display_value:"$60",color:""},{label:"Medicare",range_min_value:70,range_min_display_value:"$70",range_max_value:100,range_max_display_value:"$100",color:""}],orientation:"vertical",init:function(){var self=this;self._setAllDims();var chart_svg=this.$.chart;self.svg=d3.select(chart_svg);var defs=self.svg.append("defs");defs.append("pattern").attr("id","pattern-stripe").attr("width",1).attr("height",5).attr("patternUnits","userSpaceOnUse").attr("patternTransform","rotate(45)").append("rect").attr("width",1).attr("height",1).attr("transform","translate(0,0)").attr("fill","white");defs.append("mask").attr("id","mask-stripe").append("rect").attr("width","100%").attr("height","100%").attr("x",0).attr("y",0).attr("fill","url(#pattern-stripe)");self.container=self.svg.append("g");self.spectrum=self.container.selectAll(".spectrum").data([self._wholeRange]).enter().append("rect");self.bars=this.container.selectAll(".bar").data(this.chartData).enter().append("rect");self.labels=this.container.selectAll(".label").data(this.chartData).enter().append("text");self.spectrum.attr("class","spectrum").style("fill",function(d,i){return"#FFF"});self.values=this.container.selectAll(".value").data(this.chartData).enter().append("text");self._setElementSizes();self.bars.attr("height",0).attr("width",self.dims.bar.width);self.labels.style("opacity",0);self.values.style("opacity",0);self.spectrum.attr("x",self.dims.labels.width+self.dims.margin.label).attr("y",function(d){return self.y(self._wholeRange.min)}).attr("width",self.dims.bar.width).attr("height",function(d){return self.y(self._wholeRange.max)})},_setAllDims:function(){var self=this;self.dims=self.setupStackedDims(self);var dataMargin=.1;var minmin=d3.min(self.chartData,function(d){return d.range_min_value});var maxmax=d3.max(self.chartData,function(d){return d.range_max_value});var marginValue=(maxmax-minmin)*dataMargin;self._wholeRange={min:minmin-marginValue,max:maxmax+marginValue};var scales=self.simpleScaleBuilder(this.dims.width,this.dims.height,self.chartData);self.y=scales.y;self.x=scales.x;self.y.domain([self._wholeRange.min,self._wholeRange.max])},_setElementSizes:function(){var self=this;self.svg.attr("width",self.dims.width+self.dims.margin.left+self.dims.margin.right).attr("height",self.dims.height+self.dims.margin.top+self.dims.margin.bottom);self.container.attr("transform","translate("+self.dims.margin.left+","+self.dims.margin.top+")");self.bars.attr("class","bar").attr("class",function(d,i){return"bar data"+i}).style("mask",function(d){return d.pattern?"url(#mask-stripe)":"none"}).style("fill",function(d){return d.color}).style("stroke",function(d){return d.color});self.labels.attr("class","label").attr("class",function(d,i){return"label data"+i}).style("text-anchor","end").text(function(d){return d.label}).style("fill",function(d){return d.color}).style("stroke",function(d){return d.color});self.values.attr("font-weight",300).attr("class",function(d,i){return"defaultvalue value data"+i}).style("opacity",0).text(function(d){return d.range_max_display_value&&d.range_min_display_value?d.range_min_display_value+" - "+d.range_max_display_value:d.range_min_value.toString()+" - "+d.range_max_value.toString()}).style("fill",function(d){return d.color}).style("stroke",function(d){return d.color})},resize:function(){var self=this;self._setAllDims();self._setElementSizes();self.animate()},reset:function(hard){var self=this;var height=this.height;if(hard){self.bars.transition().duration(1).attr("height",0);self.labels.transition().duration(1).style("opacity",0);self.values.transition().duration(1).style("opacity",0)}else{self.bars.transition().duration(this.animationDelay).attr("height",0);self.labels.transition().duration(this.animationDelay).style("opacity",0);self.values.transition().duration(this.animationDelay).style("opacity",0)}},animate:function(){var self=this;var y=self.y;var labels=self.labels;var delay=self.animationDelay;self.spectrum.transition().duration(delay).attr("x",self.dims.labels.width+self.dims.margin.label).attr("y",function(d){return self.y(self._wholeRange.min)}).attr("width",self.dims.bar.width).attr("height",function(d){return self.y(self._wholeRange.max)});self.bars.transition().duration(delay).attr("x",self.dims.labels.width+self.dims.margin.label).attr("y",function(d){return self.dims.height-self.y(d.range_max_value)}).attr("width",self.dims.bar.width).attr("height",function(d){var h=Math.max(self.y(d.range_max_value-d.range_min_value),0);return h});self.labels.transition(delay).duration(delay).attr("x",self.dims.labels.width).attr("y",function(d){return self.dims.height-self.y(d.range_max_value-(d.range_max_value-d.range_min_value)/2)}).style("opacity",1);self.values.transition(delay).duration(delay).attr("x",self.dims.labels.width+self.dims.margin.label*2+self.dims.bar.width).attr("y",function(d){return self.dims.height-self.y(d.range_max_value-(d.range_max_value-d.range_min_value)/2)}).style("opacity",1)},updateData:function(){var self=this;self._setAllDims();self.bars=self.container.selectAll(".bar").data(self.chartData);self.labels=self.container.selectAll(".label").data(self.chartData);self.values=self.container.selectAll(".value").data(self.chartData);if(self.dataLength!=self.chartData.length){self.bars.enter().append("rect").attr("class","bar").attr("height",0);self.labels.enter().append("text").attr("class","label");self.values.enter().append("text").attr("class","value").attr("y",self.dims.height);self.bars.exit().transition().duration(1e3).attr("height",0).attr("y",self.dims.height).style("opacity",0).remove();self.labels.exit().transition().duration(1e3).style("opacity",0).remove();self.values.exit().transition().duration(1e3).style("opacity",0).remove();self._setElementSizes()}self.labels.text(function(d){return d.label});self.values.text(function(d){return d.display_value?d.display_value:d.value});self.animate()},chartSpecificDataValidate:function(){var errors=[],numOfSets=this.chartData.length;if(numOfSets===0){errors.push({input:numOfSets,msg:"Please include at least one value range and label."})}else{for(var i=0;i<numOfSets;i++){if(!this.chartData[i].range_min_value||!this.chartData[i].range_max_value){errors.push({input:this.chartData,msg:"You must include a min and max value for each datapoint."})}if(!this.chartData[i].label){errors.push({input:this.chartData,msg:"You must include a label for each range."})}if(this.chartData[i].range_min_value>this.chartData[i].range_max_value){errors.push({input:this.chartData,msg:"Max value must be greater than min value."})}}}return errors},getMetaData:function(){return{name:"th-spectrum-chart",description:"Thelma spectrum chart",category:"chart",version:"0.0.1",thumbnail:"spectrum.jpg",tags:["chart","column","animated"],content:false,inputAttr:{chartWidth:{friendly:"Width",type:"int","default":275},chartHeight:{friendly:"Height",type:"int","default":250},chartData:{friendly:"Data",type:"table-repeating",rows:2,fields:{label:{friendly:"Label",type:"string","default":"Medicaid"},range_min_value:{friendly:"Min Val",type:"int","default":10},range_min_display_value:{friendly:"Min Disp",type:"string","default":"$10"},range_max_value:{friendly:"Value","Max Val":"int","default":50},range_max_display_value:{friendly:"Max Disp",type:"string","default":"$50"},color:{friendly:"Color",type:"colorPicker","default":"",optional:true},pattern:{friendly:"Pattern",type:"string","default":"stripe",optional:true}},"default":[{label:"Medicaid",color:"",pattern:"",range_min_value:10,range_max_value:50},{label:"Federal",color:"",pattern:"",range_min_value:40,range_max_value:60},{label:"Medicare",color:"",pattern:"stripe",range_min_value:70,range_max_value:100}]}}}}});</script>
+
+
+</polymer-element>
+</div><div hidden>
+
+
+
+<polymer-element name="th-stacked-chart" extends="th-d3-chart" assetpath="../bower_components/thelma-charts/">
+
+	<template>
+	    <core-style ref="theme"></core-style>
+	    <style>:host{display:inline-block;position:relative}#data_errors{display:none;font-size:14px;color:red;position:absolute;top:0;left:0}</style>
+
+	    <svg id="chart"></svg>
+
+	    <ul id="data_errors">
+	    </ul>  
+
+	    <!-- to allow embeded th-editor component -->
+	    <content select="th-editor"></content> 
+	    
+	</template>
+
+	<script>Polymer("th-stacked-chart",{init:function(){var self=this;self.dims=self.setupStackedDims(self);var margin=self.dims.margin,width=self.dims.width,height=self.dims.height,barWidth=self.dims.bar.width;var scales=self.simpleScaleBuilder(width,height,self.chartData),x=scales.x,y=scales.y;self.y=y;self.x=x;var total=0;self.chartData.forEach(function(d){d.total=total;total+=parseFloat(d.value)});self.y.domain([0,total]);var chart_svg=this.$.chart;self.svg=d3.select(chart_svg);self.container=self.svg.append("g");self.bars=this.container.selectAll(".bar").data(this.chartData).enter().append("rect");self.labels=this.container.selectAll(".label").data(this.chartData).enter().append("text").attr("class","label");self.values=this.container.selectAll(".value").data(this.chartData).enter().append("text").attr("class","value");self._setElementSizes();self.bars.attr("y",self.dims.height).attr("height",0);self.labels.attr("height",0).style("opacity",0);self.values.attr("height",0).style("opacity",0)},_setElementSizes:function(){var self=this;self.svg.attr("width",self.dims.width+self.dims.margin.left+self.dims.margin.right).attr("height",self.dims.height+self.dims.margin.top+self.dims.margin.bottom);self.container.attr("transform","translate("+self.dims.margin.left+","+self.dims.margin.top+")");self.bars.attr("class",function(d,i){return"bar data"+i}).style("fill",function(d){return d.color}).style("stroke",function(d){return d.color});self.labels.attr("class",function(d,i){return"label data"+i}).style("text-anchor","end").text(function(d){return d.label}).style("fill",function(d){return d.color}).style("stroke",function(d){return d.color});self.values.attr("class",function(d,i){return"value data"+i}).attr("font-size","13px").attr("x",self.dims.labels.width+self.dims.margin.label*2+self.dims.bar.width).style("fill",function(d){return d.color}).style("stroke",function(d){return d.color}).text(function(d){return d.display_value?d.display_value:d.value})},reset:function(){var self=this;var height=this.height;self.bars.transition().duration(self.animationDelay).attr("y",height).attr("height",0);self.labels.transition().duration(self.animationDelay).attr("y",height).style("opacity",0);self.values.transition().duration(self.animationDelay).attr("y",height).style("opacity",0)},resize:function(){console.log("resize");var self=this;self.dims=self.setupStackedDims(self);console.log(self.dims);var scales=self.simpleScaleBuilder(self.dims.width,self.dims.height,self.chartData),x=scales.x,y=scales.y;self.y=y;self.x=x;var total=0;self.chartData.forEach(function(d){d.total=total;total+=parseFloat(d.value)});console.log(total);self.y.domain([0,total]);self._setElementSizes();self.animate()},updateData:function(){console.log("UUpdate");var self=this;var scales=self.simpleScaleBuilder(self.dims.width,self.dims.height,self.chartData);var x=scales.x;var y=scales.y;self.y=y;self.x=x;var width=self.dims.width,height=self.dims.height;self.bars=self.container.selectAll(".bar").data(self.chartData);self.labels=self.container.selectAll(".label").data(self.chartData);self.values=self.container.selectAll(".value").data(self.chartData);if(self.dataLength!=self.chartData.length){self.dataLength=self.chartData.length;self.dims.barWidth=Math.min(70,self.dims.width/self.dataLength/(1+self.dims.barGap));self.bars.enter().append("rect").attr("class","bar").attr("height",0);self.labels.enter().append("text").attr("class","label");self.values.enter().append("text").attr("class","value").attr("y",height);self.bars.exit().transition().duration(1e3).attr("height",0).attr("y",height).style("opacity",0).remove();self.labels.exit().transition().duration(1e3).style("opacity",0).remove();self.values.exit().transition().duration(1e3).style("opacity",0).remove()}self.resize();self.labels.text(function(d){return d.label});self.values.text(function(d){return d.display_value?d.display_value:d.value});self.animate()},animate:function(){var self=this;var y=self.y;self.bars.transition().duration(self.animationDelay).attr("x",self.dims.labels.width+self.dims.margin.label).attr("width",self.dims.bar.width).attr("y",function(d){return y(d.total)}).attr("height",function(d){return y(d.value)});self.labels.transition(self.animationDelay).duration(self.animationDelay).style("opacity",1).attr("x",self.dims.labels.width).attr("y",function(d){return y(d.total+d.value/2)+6});self.values.transition(self.animationDelay).duration(self.animationDelay).style("opacity",1).attr("x",self.dims.labels.width+self.dims.margin.label*2+self.dims.bar.width).attr("y",function(d){return y(d.total+d.value/2)+6})},chartSpecificDataValidate:function(){var errors=[],numOfSets=this.chartData.length;if(numOfSets===0){errors.push({input:numOfSets,msg:"Please include at least one value and label."})}else{for(var i=0;i<numOfSets;i++){if(!this.chartData[i].value){errors.push({input:this.chartData,msg:"You must include a value for each set."})}if(this.chartData[i].value<0){errors.push({input:this.chartData,msg:"You cannot have any negative values."})}if(!this.chartData[i].label){errors.push({input:this.chartData,msg:"You must include an label for each value."})}}}return errors},getMetaData:function(){return{name:"th-stacked-chart",description:"Thelma stacked chart",category:"chart",version:"0.0.1",thumbnail:"stacked.jpg",tags:["chart","column","animated"],inputAttr:{chartWidth:{friendly:"Width",type:"int","default":200},chartHeight:{friendly:"Height",type:"int","default":250},chartData:{friendly:"Data",type:"table-repeating",rows:2,fields:{label:{friendly:"Label",type:"string","default":"Player"},value:{friendly:"Value",type:"int","default":15},display_value:{friendly:"Display Value",type:"string","default":"$15"},color:{friendly:"Color",type:"colorPicker","default":"",optional:true}},"default":[{label:"medicaid",value:20,color:""},{label:"gap",value:40,color:""},{label:"sub",value:10,color:""}]}}}}});</script>
+</polymer-element>
+</div><div hidden>
+
+
+<polymer-element name="th-n-peak-chart" extends="th-d3-chart" assetpath="../bower_components/thelma-charts/">
+
+  <template>
+      <core-style ref="theme"></core-style>
+      <style>:host{display:inline-block;position:relative}#data_errors{display:none;font-size:14px;color:red;position:absolute;top:0;left:0}</style>
+
+      <svg id="chart"></svg>
+
+      <ul id="data_errors">
+      </ul>  
+
+      <!-- to allow embeded th-editor component -->
+      <content select="th-editor"></content> 
+      
+  </template>
+
+  <script>(function(){var staticObj={};Thelma.BarFamilyPrivateStaticMethods.apply(staticObj);staticObj._setupData=function(polymerObj){var barDims=polymerObj.dims.bars,height=polymerObj.dims.height,y=polymerObj.scales.y,lastEdge=0;var peakData=polymerObj.chartData.map(function(i){var coordinates=[{x:lastEdge,y:-height},{x:lastEdge+barDims.width,y:-height},{x:lastEdge+barDims.width/2,y:-height+y(i.value)}];lastEdge=lastEdge+barDims.width-barDims.widthOverlap;return coordinates});return peakData},staticObj._setupElements=function(polymerObj){var peakData=polymerObj.peakData,labelDims=polymerObj.dims.labels,barDims=polymerObj.dims.bars;polymerObj.svg=d3.select(polymerObj.$.chart);while(polymerObj.chartData.length>polymerObj.colors.count){polymerObj.addMoreColors(polymerObj)}polymerObj.container=polymerObj.svg.selectAll(".container").data([1]).enter().append("g").attr("class","container");polymerObj.peakLineStart=d3.svg.line().x(function(d){return d.x}).y(function(d){return polymerObj.dims.height});polymerObj.peaks=polymerObj.container.selectAll(".peak").data(peakData).enter().append("path").attr("class",function(d,i){return"peak data"+i}).attr("d",polymerObj.peakLineStart).attr("opacity",0).attr("fill",function(d,i){return polymerObj.colors.accents[i]}).attr("stroke",function(d,i){return polymerObj.colors.accents[i]}).style("fill",function(d,i){return polymerObj.chartData[i].color}).style("stroke",function(d,i){return polymerObj.chartData[i].color});polymerObj.labels=polymerObj.container.selectAll(".label").data(polymerObj.chartData).enter().append("text").attr("class",function(d,i){return"label data"+i}).attr("fill",function(d,i){return polymerObj.colors.accents[i]}).attr("stroke",function(d,i){return polymerObj.colors.accents[i]}).style("fill",function(d){return d.color}).style("stroke",function(d){return d.color}).attr("transform",function(d,i){var xPos=barDims.width/2+(barDims.width-barDims.widthOverlap)*i;var yPos=polymerObj.dims.height+polymerObj.dims.margin.label;var rotation=labelDims.angle;return"translate("+xPos+","+yPos+") rotate("+rotation+")"});polymerObj.values=polymerObj.container.selectAll(".value").data(polymerObj.chartData).enter().append("text").attr("class",function(d,i){return"value data"+i}).attr("y",polymerObj.dims.height).attr("fill",function(d,i){return polymerObj.colors.accents[i]}).attr("stroke",function(d,i){return polymerObj.colors.accents[i]}).style("fill",function(d){return d.color}).style("stroke",function(d){return d.color})},staticObj._setupContainerSize=function(polymerObj){var margin=polymerObj.dims.margin,width=polymerObj.dims.width,height=polymerObj.dims.height;polymerObj.svg=d3.select(polymerObj.$.chart);polymerObj.svg.attr("width",width+margin.left+margin.right).attr("height",height+margin.top+margin.bottom);polymerObj.container.attr("transform","translate("+margin.left+","+margin.top+")")},staticObj._setupElementSizes=function(polymerObj){var barDims=polymerObj.barDims,labelDims=polymerObj.dims.labels,barDims=polymerObj.dims.bars,valueDims=polymerObj.dims.values,peakData=polymerObj.peakData;height=polymerObj.height;staticObj._setupContainerSize(polymerObj);polymerObj.peakLine=d3.svg.line().x(function(d){return d.x}).y(function(d){return-d.y});polymerObj.peaks.data(peakData);polymerObj.labels.attr("text-anchor",function(){return labelDims.angle>0?"left":"middle"}).text(function(d){return d.label});polymerObj.values.attr("text-anchor","middle").attr("font-size",valueDims.size).text(function(d){return d.display_value?d.display_value:d.value})};Polymer("th-n-peak-chart",{chartData:[{label:"Platinum",value:50,display_value:"$50",color:""},{label:"Gold",value:45,display_value:"$45",color:""},{label:"Silver",value:30,display_value:"$30",color:""},{label:"Bronze",value:25,display_value:"$25",color:""}],init:function(){var self=this;self.dims=self.setupDimensions(self);self.width=self.dims.width;self.height=self.dims.height;self.dims=staticObj.setupBarLabelDims(self.dims,self.chartData,1.25);self.colors=self.getColors();self.scales=self.simpleScaleBuilder(self.width,self.height,self.chartData);self.peakData=staticObj._setupData(self);staticObj._setupElements(self);staticObj._setupElementSizes(self);self.dataLength=self.peakData.length},reset:function(hard){var self=this,height=self.height;if(hard){self.peaks.attr("d",self.peakLineStart).attr("opacity",0);self.values.attr("y",height).style("opacity",0)}else{self.peaks.transition().duration(self.animationDelay).attr("d",self.peakLineStart).attr("opacity",0);self.values.transition().duration(self.animationDelay).attr("y",height).style("opacity",0)}},animate:function(){var self=this,y=self.scales.y,height=self.height,labelDims=self.dims.labels,barDims=self.dims.bars,valueDims=self.dims.values;self.peaks.transition().attr("opacity",.8).duration(self.animationDelay).attr("d",self.peakLine);self.values.transition(self.animationDelay).duration(self.animationDelay).attr("y",function(d){return height-y(d.value)-self.dims.values.margin}).attr("x",function(d,i){return barDims.width/2+(barDims.width-barDims.widthOverlap)*i}).style("opacity",1);self.labels.transition(self.animationDelay).duration(self.animationDelay).attr("transform",function(d,i){var xPos=barDims.width/2+(barDims.width-barDims.widthOverlap)*i;var yPos=height+self.dims.margin.label;var rotation=labelDims.angle;if(rotation>0){xPos=xPos-7;yPos=yPos-3}return"translate("+xPos+","+yPos+") rotate("+rotation+")"}).style("opacity",1)},resize:function(){var self=this;self.dims=self.setupDimensions(self);self.width=self.dims.width;self.height=self.dims.height;self.dims=staticObj.setupBarLabelDims(self.dims,self.chartData,1.25);self.scales=self.simpleScaleBuilder(self.width,self.height,self.chartData);self.peakData=staticObj._setupData(self);staticObj._setupElementSizes(self);self.animate()},updateData:function(){var self=this,barDims=self.dims.bars,labelDims=self.dims.labels;self.peakData=staticObj._setupData(self);self.peaks=self.container.selectAll(".peak").data(self.peakData);self.labels=self.container.selectAll(".label").data(self.chartData);self.values=self.container.selectAll(".value").data(self.chartData);if(self.dataLength!=self.peakData.length){self.dataLength=self.peakData.length;self.peaks.enter().append("path").attr("class",function(d,i){return"peak data"+i}).attr("height",0).attr("y",height).attr("d",self.peakLineStart).attr("opacity",0).style("fill",function(d,i){return polymerObj.chartData[i].color}).style("stroke",function(d,i){return polymerObj.chartData[i].color});self.labels.enter().append("text").attr("class",function(d,i){return"label data"+i}).style("fill",function(d){return d.color}).style("stroke",function(d){return d.color}).attr("transform",function(d,i){var xPos=barDims.width/2+(barDims.width-barDims.widthOverlap)*i;var yPos=height+self.dims.margin.label;var rotation=labelDims.angle;return"translate("+xPos+","+yPos+") rotate("+rotation+")"});self.values.enter().append("text").attr("class",function(d,i){return"value data"+i}).attr("y",height).style("fill",function(d){return d.color}).style("stroke",function(d){return d.color});self.peaks.exit().transition().duration(1e3).style("opacity",0).remove();self.labels.exit().transition().duration(1e3).style("opacity",0).remove();self.values.exit().transition().duration(1e3).style("opacity",0).remove();self.resize()}self.labels.text(function(d){return d.label});self.values.text(function(d){return d.display_value?d.display_value:d.value});self.animate()},chartSpecificDataValidate:function(){var self=this,errors=[],numOfPeaks=self.chartData.length;if(numOfPeaks===0){errors.push({input:numOfPeaks,msg:"Please provide at least one value for the chart."})}else{for(var i=0;i<numOfPeaks;i++){if(!self.chartData[i].value){errors.push({input:self.chartData,msg:"You must include a value for every peak."})}if(!self.chartData[i].label){errors.push({input:self.chartData,msg:"You must include a label for every peak."})}}}return errors},getMetaData:function(){return{name:"th-n-peak-chart",description:"Thelma n peak chart",category:"chart",version:"0.0.1",thumbnail:"nbar.jpg",tags:["chart","bar"],inputAttr:{chartWidth:{friendly:"Width",type:"int","default":200},chartHeight:{friendly:"Height",type:"int","default":300},chartData:{friendly:"Data",type:"table-repeating",rows:2,fields:{label:{friendly:"Label",type:"string","default":"Player"},value:{friendly:"Value",type:"int","default":15},display_value:{friendly:"Display Value",type:"string","default":""}},"default":[{label:"Player",value:15,display_value:"$15"},{label:"Vendor",value:20,display_value:"$20"},{label:"Mascot",value:45,display_value:"$45"}]}}}}})})();</script>
+</polymer-element>
+</div><div hidden>
+
+
+<polymer-element name="th-n-bar-chart-horizontal" extends="th-d3-chart" assetpath="../bower_components/thelma-charts/">
+	<template>
+	    <core-style ref="theme"></core-style>
+	    <style>:host{display:inline-block;position:relative}#data_errors{display:none;font-size:14px;color:red;position:absolute;top:0;left:0}</style>
+	     <svg id="chart"></svg>
+	     <ul id="data_errors">
+	     </ul> 
+
+      <!-- to allow embeded th-editor component -->
+      <content select="th-editor"></content> 
+	    
+	    </template>  
+
+	<script>(function(){Polymer("th-n-bar-chart-horizontal",{chartData:[{label:"Player of the day",value:15,display_value:"$15",color:""},{label:"Vendor",value:20,display_value:"$20",color:"",color:""},{label:"Cheerleader",value:40,display_value:"$40",color:""},{label:"Designer",value:70,display_value:"$70",color:""}],init:function(){var self=this;self._setupHorizontalDims();var chart_svg=self.$.chart;self.svg=d3.select(chart_svg);self._setupElements();self.labels.text(function(d){return d.label});self.values.text(function(d){return d.display_value?d.display_value:d.value});var scales=self.simpleScaleBuilder(self.dims.width,self.dims.height,self.chartData,"horizontal");var x=scales.x;var y=scales.y;self.y=y;self.x=x;self._setElementSizes();self.bars.attr("x",x(0)).attr("height",self.dims.bars.width).attr("width",0);self.labels.attr("x",0).attr("y",function(d,i){return y(i)+self.dims.bars.width+self.dims.labels.height*.6});self.values.attr("y",function(d,i){return y(i)+self.dims.bars.width/2+self.dims.values.height*.4}).attr("x",self.dims.values.containerWidth-8).style("font-size",function(d){return self.dims.values.fontSize+"px"})},_setupElements:function(){var self=this;self.container=self.svg.selectAll(".container").data([1]).enter().append("g").attr("class","container");this.barContainer=this.container.append("g").attr("class","bar_container");this.bars=this.barContainer.selectAll(".bar").data(this.chartData).enter().append("rect").attr("class","bar");this.labelContainer=this.container.append("g").attr("class","label_container");this.labels=this.labelContainer.selectAll(".label").data(this.chartData).enter().append("text").attr("class","label");this.valueContainer=this.container.append("g").attr("class","value_container");this.values=this.valueContainer.selectAll(".value").data(this.chartData).enter().append("text").attr("class","value")},_setupHorizontalDims:function(){var self=this;self.dims=self.setupDimensions(self);self.dims.height=self.dims.height-self.dims.margin.top-self.dims.margin.bottom;self.dims.margin.top=5;self.dims.margin.bottom=0;self.setupBarDims(self,1,1.6,"horizontal");self.colors=self.getColors();var margin=self.dims.margin,width=self.dims.width,height=self.dims.height;self.dataLength=self.chartData.length;var maxValueLength=d3.max(self.chartData,function(d){return d.display_value?d.display_value.length:d.value.length});self.dims.labels={};self.dims.values={};self.dims.labels.height=25;self.dims.values.height=self.dims.bars.width;self.dims.values.fontSize=Math.max(Math.min(self.dims.values.height,42),15);self.dims.values.containerWidth=maxValueLength*self.dims.values.fontSize*.75;self.dims.bars.area=width-self.dims.values.containerWidth},_setElementSizes:function(){var self=this;var margin=self.dims.margin,width=self.dims.width,height=self.dims.height,x=self.x,y=self.y;self.svg.attr("width",width+margin.left+margin.right).attr("height",height+margin.top+margin.bottom);self.container.attr("transform","translate("+margin.left+","+margin.top+")");self.barContainer.attr("transform","translate ("+self.dims.values.containerWidth+",0)");self.labelContainer.attr("transform","translate ("+self.dims.values.containerWidth+",0)");while(self.chartData.length>self.colors.count){self.addMoreColors(self)}this.bars.attr("class",function(d,i){return"bar data"+i}).attr("x",x(0)).attr("fill",function(d,i){return self.colors.accents[i]}).attr("stroke",function(d,i){return self.colors.accents[i]}).style("fill",function(d,i){return d.color}).style("stroke",function(d,i){return d.color});this.labels.attr("class",function(d,i){return"label data"+i}).style("text-anchor","left").attr("fill",function(d,i){return self.colors.accents[i]}).attr("stroke",function(d,i){return self.colors.accents[i]}).style("fill",function(d,i){return d.color}).style("stroke",function(d,i){return d.color});this.values.attr("class",function(d,i){return"value data"+i}).style("text-anchor","end").attr("fill",function(d,i){return self.colors.accents[i]}).attr("stroke",function(d,i){return self.colors.accents[i]}).style("fill",function(d,i){return d.color}).style("stroke",function(d,i){return d.color})},reset:function(hard){var self=this,height=self.dims.height;if(hard){self.bars.attr("width",0);self.values.style("opacity",0)}else{self.bars.transition().duration(1e3).attr("width",0).style("opacity",0);self.values.transition().duration(1e3).style("opacity",0)}},animate:function(){var self=this;var x=self.x,y=self.y;var width=self.dims.width;this.bars.transition().duration(this.animationDelay).attr("x",x(0)).attr("y",function(d,i){return y(i)}).attr("height",self.dims.bars.width).attr("width",function(d){return x(d.value)}).style("opacity",1);this.labels.transition().duration(this.animationDelay).attr("x",0).attr("y",function(d,i){return y(i)+self.dims.bars.width+self.dims.labels.height*.6});this.values.attr("y",function(d,i){return y(i)+self.dims.bars.width/2+self.dims.values.height*.4}).attr("x",self.dims.values.containerWidth-8).style("font-size",function(d){return self.dims.values.fontSize+"px"}).style("opacity",1)},resize:function(){var self=this;self._setupHorizontalDims();var scales=self.simpleScaleBuilder(self.dims.width,self.dims.height,self.chartData,"horizontal");var x=scales.x;var y=scales.y;self.y=y;self.x=x;self._setElementSizes();self.animate()},updateData:function(){var self=this;var scales=self.simpleScaleBuilder(self.dims.width,self.dims.height,self.chartData);var x=scales.x;var y=scales.y;self.y=y;self.x=x;var width=self.dims.width,height=self.dims.height;self.bars=self.barContainer.selectAll(".bar").data(self.chartData);self.labels=self.labelContainer.selectAll(".label").data(self.chartData);self.values=self.valueContainer.selectAll(".value").data(self.chartData);if(self.dataLength!=self.chartData.length){self.dataLength=self.chartData.length;self._setupHorizontalDims();self.bars.enter().append("rect").attr("class","bar").attr("class",function(d,i){return"bar data"+i}).attr("fill",function(d,i){return self.colors.accents[i]}).attr("stroke",function(d,i){return self.colors.accents[i]}).style("fill",function(d,i){return d.color}).style("stroke",function(d,i){return d.color}).attr("x",x(0)).attr("height",self.dims.bars.width).attr("width",0);self.labels.enter().append("text").attr("class","label");self.values.enter().append("text").attr("class","value");self.bars.exit().transition().duration(1e3).attr("width",0).style("opacity",0).remove();self.labels.exit().transition().duration(1e3).style("opacity",0).remove();self.values.exit().transition().duration(1e3).style("opacity",0).remove();self.resize()}self.labels.text(function(d){return d.label});self.values.text(function(d){return d.display_value?d.display_value:d.value});self.animate()},chartSpecificDataValidate:function(){var errors=[],numOfBars=this.chartData.length;if(numOfBars===0){errors.push({input:numOfBars,msg:"Please provide at least one value for the chart."})}else{for(var i=0;i<numOfBars;i++){if(!this.chartData[i].value){errors.push({input:this.chartData,msg:"You must include a value for every bar."})}if(!this.chartData[i].label){errors.push({input:this.chartData,msg:"You must include a label for every bar."})}}}return errors},getMetaData:function(){return{name:"th-n-bar-chart",description:"Thelma n bar chart",category:"chart",version:"0.0.1",thumbnail:"nbar.jpg",tags:["chart","bar"],inputAttr:{chartWidth:{friendly:"Width",type:"int","default":200},chartHeight:{friendly:"Height",type:"int","default":300},chartData:{friendly:"Data",type:"table-repeating",rows:2,fields:{label:{friendly:"Label",type:"string","default":"Player"},value:{friendly:"Value",type:"int","default":15},display_value:{friendly:"Display Value",type:"string","default":""}},"default":[{label:"Player",value:15,display_value:"$15"},{label:"Vendor",value:20,display_value:"$20"},{label:"Mascot",value:45,display_value:"$45"}]}}}}})})();</script>
+</polymer-element>
+</div><div hidden>
+
+
+<polymer-element name="th-map-us" extends="th-d3-chart" assetpath="../bower_components/thelma-charts/">
+	<template>
+
+		<core-style ref="theme"></core-style>
+
+	    <style>:host{display:inline-block;position:relative}div,span{pointer-events:none}#state{position:absolute;transition:opacity .7s;opacity:0;top:5px;width:100%;text-align:center;font-size:1.6em}#legend{position:absolute;transition:opacity .7s;opacity:0;bottom:5px;width:100%}#legend div{display:inline-block;height:1.2em}#value{float:right;margin-right:15px}#tip{position:absolute;transition:opacity .7s;opacity:0;top:40px;width:100%;text-align:center;font-size:.6em}</style>
+		<div id="state"></div>
+		<span id="tip">(tap again to zoom out)</span>
+	    <svg id="chart"></svg>
+	    <div id="legend">
+		    <div id="label"></div>
+		    <div id="value"></div>
+		</div>
+
+		<!-- to allow embeded th-editor component -->
+      	<content select="th-editor"></content> 
+
+
+	</template>
+	
+	<script src="../bower_components/topojson/topojson.js"></script> 
+
+	<script>Polymer("th-map-us",{chartData:{marked_states:["Alabama","Alaska","Florida","Georgia","Idaho","Indiana","Kansas","Louisiana","Maine","Mississippi","Missouri","Montana","Nebraska","New Hampshire","North Carolina","Oklahoma","Pennsylvania","South Carolina","South Dakota","Tennessee","Texas","Utah","Virginia","Wisconsin","Wyoming"],state_data:{label:"Medicaid Coverage",values:{Alabama:.164900154,Alaska:1.275069684,Arizona:1.38,Arkansas:1.38,California:1.38,Colorado:1.38,Connecticut:2.01,Delaware:1.38,"District of Columbia":2.2,Florida:.348617512,Georgia:.388556068,Hawaii:1.38,Idaho:.274270353,Illinois:1.38,Indiana:.24047619,Iowa:1.38,Kansas:.379953917,Kentucky:1.38,Louisiana:.239861751,Maine:1.05030722,Maryland:1.38,Massachusetts:1.38,Michigan:1.38,Minnesota:2.05,Mississippi:.290245776,Missouri:.238632873,Montana:.517588326,Nebraska:.553840246,Nevada:1.38,"New Hampshire":.74984639,"New Jersey":1.38,"New Mexico":1.38,"New York":1.38,"North Carolina":.453686636,"North Dakota":1.38,Ohio:1.38,Oklahoma:.480107527,Oregon:1.38,Pennsylvania:.379953917,"Rhode Island":1.38,"South Carolina":.669969278,"South Dakota":.539093702,Tennessee:1.109907834,Texas:.191321045,Utah:.466589862,Vermont:1.38,Virginia:.518202765,Washington:1.38,"West Virginia":1.38,Wisconsin:.999923195,Wyoming:.58640553}}},dataUrls:{us:"data/us.json"},centers:[],centered:false,init:function(){var self=this;self.dims=self.setupDimensions(self);self.formats={percent:d3.format("%")};var width=self.dims.width,height=self.dims.height;var projection=d3.geo.albersUsa().scale(width).translate([width/2,height/2]);self.path=d3.geo.path().projection(projection);var chart_svg=self.$.chart;self.svg=d3.select(chart_svg);self.svg.style("height",height+"px").style("width",width+"px");self.map=self.svg.append("g").attr("class","states_map");d3.json(self.resolvePath(self.dataUrls.us),function(error,us){self.render(error,us)})},render:function(err,us){var self=this;var scale=.05,centers=self.centers,states=topojson.feature(us,us.objects.states);self.states=self.map.selectAll("path.state").data(states.features).enter().append("path").attr("class",function(d){return"state map-border "+d.properties.name.toLowerCase().replace(/\s/g,"-")}).attr("d",self.path).on("click",function(d){self._clicked(d,self)}).attr("centroid",function(d){var centroid=self.path.centroid(d);centers[d.properties.name.toLowerCase().replace(/\s/g,"-")]=centroid});if(self.chartData.marked_states){self.marks=self.map.selectAll(".mark").data(self.chartData.marked_states).enter().append("g").attr("class",function(d){var name=d.toLowerCase().replace(/ /g,"-");return"mark data0 mark-"+name}).style("opacity",0).attr("transform",function(d,i){var name=d.toLowerCase().replace(/ /g,"-");return"translate ("+parseInt(centers[name][0]-7)+","+parseInt(centers[name][1]-7)+") scale("+scale+","+scale+")"}).attr("width",12).attr("height",12);self.marks.append("path").attr("d","m100,60l-40,40l170,170l40,-40l-170,-170z");self.marks.append("path").attr("d","m60,230l170,-170l40,40l-170,170l-40,-40z")}if(self.chartData.state_data){self.dataMap=d3.map();var minValue=d3.min(d3.values(self.chartData.state_data.values));var maxValue=d3.max(d3.values(self.chartData.state_data.values));var breaks=4;var interval=(maxValue-minValue)/breaks;var domain=d3.range(breaks).map(function(i){return minValue+i*interval});range=CoreStyle.g.theme.mapColors;for(key in self.chartData.state_data.values){self.dataMap.set(key,self.chartData.state_data.values[key])}self.colors=d3.scale.threshold().domain(domain).range(range)}},reset:function(){var self=this;self.marks.style("opacity",0)},_clicked:function(d,self){var x,y,k,width=self.dims.width,height=self.dims.height;if(d&&self.centered!==d){var centroid=self.path.centroid(d);x=centroid[0];y=centroid[1];k=4;self.centered=d;self.$.state.innerText=d.properties.name;self.$.state.style.opacity=1;self.$.tip.style.opacity=1;if(self.dataMap){self.$.label.innerText=self.chartData.state_data.label;self.$.value.innerText=self.dataMap.get(d.properties.name).toFixed(2);self.$.legend.style.opacity=1}}else{x=width/2;y=height/2;k=1;self.centered=null;self.$.legend.style.opacity=0;self.$.state.style.opacity=0;self.$.tip.style.opacity=0}self.map.selectAll("path").classed("active",self.centered&&function(d){return d===self.centered});self.map.transition().duration(750).attr("transform","translate("+width/2+","+height/2+")scale("+k+")translate("+-x+","+-y+")").style("stroke-width",1.5/k+"px")},animate:function(){var self=this;var initDelay=100;var pause=100;if(self.chartData.marked_states){self.marks.transition().duration(pause).delay(function(d,i){return i*pause}).style("opacity",1)}if(self.dataMap){self.states.transition().duration(pause).style("fill",function(d,i){var pc=self.colors(self.dataMap.get(d.properties.name));return pc})}}});</script>
+
+</polymer-element>
+</div><div hidden>
+
+
+<polymer-element name="th-split-donut-chart" extends="th-d3-chart" attributes="chartSize" assetpath="../bower_components/thelma-charts/">
+
+  <template>
+      <core-style ref="theme"></core-style>
+      <style>:host{display:inline-block;position:relative}#data_errors{display:none;font-size:14px;color:red;position:absolute;top:0;left:0}</style>
+
+      <svg id="chart"></svg>
+
+      <ul id="data_errors">
+      </ul>  
+
+      <!-- to allow embeded th-editor component -->
+      <content select="th-editor"></content> 
+      
+  </template>
+
+  <script>Polymer("th-split-donut-chart",{chartData:[{label:"U.S.",value:76,color:""},{label:"China",value:43,color:""}],chartSize:"200",init:function(){var self=this,margin={top:self.chartSize*.14,bottom:self.chartSize*.14,label:3},width=self.chartSize*.95,height=width+margin.top+margin.bottom,pi=Math.PI,progress=0,total=100,formatPercent=d3.format(".0%"),outerRadius=width*.49,innerRadius=width*.32;self._prevProgress=0;self.labelSize=width/12;self.height=height;function compare(a,b){if(a.value<b.value)return-1;if(a.value>b.value)return 1;return 0}self.data=self.chartData.sort(compare);self.arc=d3.svg.arc().startAngle(0*(Math.PI/180)).endAngle(180*(Math.PI/180)).innerRadius(innerRadius).outerRadius(outerRadius);var chart_svg=self.$.chart;var svg=d3.select(chart_svg);var container=svg.attr("width",width).attr("height",height).append("g").attr("transform","translate("+width/2+","+height/2+")");self.meter=container.append("g").attr("class","progress-meter");self.meter.selectAll("path.background").data(self.data).enter().append("path").attr("class","background fill-foreground2").attr("transform",function(d,i){return i>0?"translate(0, 5) rotate(90) scale(1,-1)":"rotate(90) scale(-1,-1)"}).attr("d",self.arc);self.foreground=self.meter.selectAll("path.foreground").data(self.data).enter().append("path").attr("class",function(d,i){return"foreground data"+i}).attr("transform",function(d,i){return i>0?"translate(0, 5) rotate(90) scale(1,-1)":"rotate(90) scale(-1,-1)"}).style("fill",function(d){return d.color}).style("stroke",function(d){return d.color});self.text=self.meter.selectAll("text.label").data(self.data).enter().append("text").attr("class",function(d,i){return"label data"+i}).style("font-size",self.labelSize).attr("text-anchor","middle").attr("dy",function(d,i){return i>0?self.labelSize*2:-self.labelSize}).style("fill",function(d){return d.color}).style("stroke",function(d){return d.color});self.label=self.meter.selectAll("text.chart").data(self.data).enter().append("text").attr("class","fill-foreground2 chart caps").attr("text-anchor","middle").style("font-size",self.labelSize).attr("dy",function(d,i){return i>0?height/2-1:-(height/2)+self.labelSize+1}).text(function(d){return d.label});this.formatPercent=formatPercent},reset:function(){var self=this;self.meter.selectAll("path.foreground").attr("d",function(){return self.arc.endAngle(0)()});self.meter.selectAll("text.label").text("")},animate:function(){var self=this,total=100,pi=Math.PI;self.meter.selectAll("path.foreground").transition().delay(1e3).duration(1e3).attrTween("d",function(d){var i=d3.interpolate(self._prevProgress/total,d.value/total);return function(t){var progress=i(t);self.meter.selectAll("text.label").text(function(d,i){return progress>d.value/total?self.formatPercent(d.value/total):self.formatPercent(progress)});return self.arc.endAngle(pi*progress)()};self._prevProgress=progress})},chartSpecificDataValidate:function(){var errors=[],self=this,numOfSets=self.chartData.length;if(numOfSets!=2){errors.push({input:numOfSets,msg:"Please provide exactly two values for this chart."})}else{for(var i=0;i<numOfSets;i++){if(self.chartData[i].value>100||self.chartData[i].value<1){errors.push({input:self.chartData[i].value,msg:"Values must be between 1 and 100"})}}}return errors}});</script>
+</polymer-element></div><div hidden>
+
+
+<polymer-element name="th-compare-grid-chart" extends="th-d3-chart" attributes="iconTransition animationDuration" assetpath="../bower_components/thelma-charts/">
+
+	<template>
+	    <core-style ref="theme"></core-style>
+	    <style>:host{display:inline-block;position:relative}#data_errors{display:none;font-size:14px;color:red;position:absolute;top:0;left:0}</style>
+
+	    <svg id="chart"></svg>
+
+	    <ul id="data_errors">
+	    </ul>  
+	    
+	    <!-- to allow embeded th-editor component -->
+	    <content select="th-editor"></content> 
+
+	</template>
+
+	<template>
+	    <core-style ref="theme"></core-style>
+	    <style>:host{display:inline-block;position:relative}#data_errors{display:none;font-size:14px;color:red;position:absolute;top:0;left:0}</style>
+
+	    <svg id="chart"></svg>
+
+	    <ul id="data_errors">
+	    </ul>  
+	    
+	    <!-- to allow embeded th-editor component -->
+	    <content select="th-editor"></content> 
+
+	</template>
+
+	<script>Polymer("th-compare-grid-chart",{chartData:[{label:"Non-Smoker",value:21,image:"images/kid.png"},{label:"Smoker",value:1,image:"images/kid-smoker.png"}],chartHeight:150,iconTransition:"random",animationDuration:100,init:function(){var self=this;var margin={top:0,right:0,bottom:0,left:0,label:3};var width=this.chartWidth-margin.left-margin.right,height=this.chartHeight-margin.top-margin.bottom;this.height=height;this.width=width;var chart_svg=this.$.chart;var totalCount=this.chartData.reduce(function(prev,cur){return prev+=parseInt(cur.value)},0);var _data={};var ratio=1;if(totalCount<20){_data.elementsPerRow=Math.min(5,totalCount)}else{_data.elementsPerRow=Math.min(8,totalCount)}var rowNum=Math.ceil(totalCount/_data.elementsPerRow);_data.count=d3.range(0,totalCount);_data.dim={width:Math.floor(width/_data.elementsPerRow),height:Math.floor(height/rowNum)};this.data=_data;var svg,scale_bar,lefts,right,barg,left_holder,right_holder,right_labels;this.container=d3.select(chart_svg).attr("width",width+margin.left+margin.right).attr("height",height+margin.top+margin.bottom).append("g");this.icons=this.container.selectAll(".icon").data(_data.count).enter().append("image").attr("xlink:href",function(d,i){return i<self.chartData[0].value?self.chartData[0].image:self.chartData[1].image}).attr("class","icon").attr("width",function(d,i){return i<self.chartData[0].value?_data.dim.width:_data.dim.width+10}).attr("height",_data.dim.height);this.icons.call(self._setInitialIconPos.bind(self))},reset:function(){var self=this;self.icons.call(self._setInitialIconPos.bind(self))},animate:function(){var self=this;var _data=this.data;this.icons.transition().duration(function(d,i){return i<self.chartData[0].value?self.animationDuration:self.animationDuration*5}).delay(function(d,i){return i*self.animationDuration}).attr("x",function(d,i){return i%_data.elementsPerRow*_data.dim.width}).attr("y",function(d,i){return Math.floor(i/_data.elementsPerRow)*_data.dim.height})},_setInitialIconPos:function(selection){var self=this;_data=self.data;selection.attr("x",function(d,i){var rand=Math.random()*100;var xPos;switch(self.iconTransition){case"random":xPos=Math.random()>.5?rand+self.width:-rand-_data.dim.width;break;case"drop":xPos=i%_data.elementsPerRow*_data.dim.width}return xPos}).attr("y",function(d,i){var rand=Math.random()*100;var yPos;switch(self.iconTransition){case"random":yPos=Math.random()>.5?rand+self.height:-rand-_data.dim.height;break;case"drop":yPos=-100}return yPos})},chartSpecificDataValidate:function(){var errors=[],numOfSets=this.chartData.length;if(numOfSets!=2){errors.push({input:numOfSets,msg:"Please provide two comparison sets for this chart."})}else{for(var i=0;i<numOfSets;i++){if(!this.chartData[i].value){errors.push({input:this.chartData,msg:"You must include a value for each set."})}if(!this.chartData[i].image){errors.push({input:this.chartData,msg:"You must include an image for each set."})}}}return errors}});</script>
+
+</polymer-element>
+</div><div hidden>  
+
+
+<polymer-element name="th-compare-balance-chart" extends="th-d3-chart" assetpath="../bower_components/thelma-charts/">
+  <template>
+    <core-style ref="theme"></core-style>
+    <style>:host{display:inline-block;position:relative}#chart text{font-size:14px}</style>
+
+      <svg id="chart">
+      </svg>
+
+	    <ul id="data_errors">
+	    </ul>  
+	    
+	    <!-- to allow embeded th-editor component -->
+	    <content select="th-editor"></content> 
+
+    
+  </template>
+
+	<script>Polymer("th-compare-balance-chart",{chartData:[{label:"Smoker",count:3,image:"images/kid.png",weight:1},{label:"Non-Smoker",count:20,image:"images/kid-smoker.png",weight:1}],init:function(){var self=this;var margin={top:5,right:self.chartWidth*.08,bottom:self.chartHeight*.05,left:self.chartWidth*.08,label:3},width=self.chartWidth*.95-margin.left-margin.right,height=self.chartHeight*1-margin.top-margin.bottom,barWidth=5,textLabelMargin=height*.05;self.height=height;self.width=width;self.extractElementDataPoints();var chartEl=self.$.chart;var container=d3.select(chartEl).attr("width",width+margin.left+margin.right).attr("height",height+margin.top+margin.bottom).append("g").attr("transform","translate("+margin.left+","+margin.top+")");self.container=container;self.holderTranslate="translate("+width/2+","+(height-31)+")";self.bargTranslate="translate("+width/2+","+(height-20)+")";var totalCount=self.chartData.reduce(function(prev,cur){return prev+=parseInt(cur.value)},0);self.chartData[0].weight=self.chartData[0].weight||1;self.chartData[1].weight=self.chartData[1].weight||1;self.chartData[0].width=self.chartData[0].width||25;self.chartData[0].height=self.chartData[0].height||20;self.chartData[1].width=self.chartData[1].width||20;self.chartData[1].height=self.chartData[1].height||20;self.chartData[0].elementsPerRow=Math.floor((width/2-10)/self.chartData[0].width);self.chartData[1].elementsPerRow=Math.floor((width/2-10)/self.chartData[1].width);container.append("path").attr("transform","translate("+width*.4+","+(height-18)+")").attr("d","M 15 3 L 30 25 L 0 25 L 15 3").attr("class","triangle fill-foreground");self.barg=container.append("g").attr("transform",self.bargTranslate);var bar=self.barg.append("rect").attr("x",-width/2).attr("y",0).attr("class","scale-bar fill-foreground").attr("width",width).attr("height",barWidth);self.left_holder=container.append("g").attr("class","left_holder").attr("transform",self.holderTranslate);self.lefts=self.left_holder.selectAll(".lefts").data(d3.range(0,self.chartData[0].count)).enter().append("image").attr("xlink:href",self.chartData[0].image).attr("class","lefts").attr("x",function(d,i){return-width/2+i%self.chartData[0].elementsPerRow*self.chartData[0].width}).attr("y",function(d,i){return-height*1.2}).attr("width",self.chartData[0].width).attr("height",self.chartData[0].height);self.right_holder=container.append("g").attr("class","right_holder").attr("transform",self.holderTranslate);self.rights=self.right_holder.selectAll(".rights").data(d3.range(0,self.chartData[1].count)).enter().append("image").attr("xlink:href",self.chartData[1].image).attr("class","rights").attr("x",function(d,i){return width/2-margin.right-i%self.chartData[1].elementsPerRow*self.chartData[1].width-3}).attr("y",function(d,i){return-height*1.2}).attr("rx",3).attr("ry",3).attr("width",self.chartData[1].width).attr("height",self.chartData[1].height)},reset:function(){var self=this;self.lefts.transition().duration(10).attr("y",function(d,i){return-self.height*1.2});self.rights.transition().duration(10).attr("y",function(d,i){return-self.height*1.2})},animate:function(){var self=this;var totalSideTransition=2e3;var delay={left:totalSideTransition/self.chartData[0].count,right:totalSideTransition/self.chartData[1].count},pauseBeforeRight=1e3;var maxAngle=-10;var dropSpeed=200;var prevAngle=0;self.lefts.transition().ease("linear").duration(dropSpeed).delay(function(d,i){return i*delay.left}).attr("y",function(d,i){return-Math.floor(i/self.chartData[0].elementsPerRow)*self.chartData[0].height-10}).each("end",function(d,i){var angle=(i+1)/self.chartData[0].count*maxAngle*self.chartData[0].weight;self._animateBar(prevAngle,angle,Math.min(delay.left,dropSpeed*1.5));prevAngle=angle;if(i+1==self.chartData[0].count){var rightSideFinalAngle=prevAngle;setTimeout(function(){self.rights.transition().ease("linear").duration(dropSpeed).delay(function(d,i){return i*delay.right}).attr("y",function(d,i){return-Math.floor(i/self.chartData[1].elementsPerRow)*self.chartData[1].height-10}).each("end",function(d,i){var angle=rightSideFinalAngle-(i+1)/self.chartData[1].count*self.chartData[1].weight*maxAngle;self._animateBar(prevAngle,angle,Math.min(delay.right,dropSpeed*1.5));prevAngle=angle})},pauseBeforeRight)}})},_animateBar:function(fromAngle,toAngle,delay){var self=this;self.barg.transition().ease("linear").duration(delay).attrTween("transform",tween);self.left_holder.transition().ease("linear").duration(delay).attrTween("transform",tween2);self.right_holder.transition().ease("linear").duration(delay).attrTween("transform",tween3);function tween(d,i,a){return d3.interpolateString(self.bargTranslate+" rotate("+fromAngle+") ",self.bargTranslate+" rotate("+toAngle+")")}function tween2(d,i,a){return d3.interpolateString(self.holderTranslate+"  rotate("+fromAngle+")",self.holderTranslate+" rotate("+toAngle+")")}function tween3(d,i,a){return d3.interpolateString(self.holderTranslate+" rotate("+fromAngle+")",self.holderTranslate+"  rotate("+toAngle+")")}},chartSpecificDataValidate:function(){var errors=[],numOfSets=this.chartData.length;if(numOfSets!=2){errors.push({input:numOfSets,msg:"Please provide two comparison sets for this chart."})}else{for(var i=0;i<numOfSets;i++){if(!this.chartData[i].count){errors.push({input:this.chartData,msg:"You must include a value for each set."})}if(!this.chartData[i].image){errors.push({input:this.chartData,msg:"You must include an image for each set."})}}}return errors}});</script>
+
+</polymer-element>
+</div><div hidden>undefined</div><div hidden>
+
+
+<!--
+'Bubble' component provides a visual effect of a growing or shrinking 
+circle in size by a certain percentage. It can be used side by side with
+another bubble to compare growth. The associated number also counts with
+the animation, which is provided by the th-countup-num element.
+
+@group Thelma Charts
+@element th-bubble
+@blurb Element providing a visual effect of a growing or shrinking circle
+@status alpha
+@homepage http://github.com/thelmanews/thelma-charts/blob/master/th-bubble.html
+-->
+
+<polymer-element name="th-bubble" extends="th-d3-chart" attributes="duration chartSize" assetpath="../bower_components/thelma-charts/">
+  <template>
+    <core-style ref="theme"></core-style>
+    <style>:host{display:inline-block;position:relative}#value{font-size:{{numberSize+"px"}}}.text{text-align:center;margin:0 auto;width:{{chartSize+"px"}};font-size:{{numberSize*0.7+"px"}}}</style>
+      <svg id="chart"></svg>
+      <div id="value" class="text"></div>
+      <div id="label" class="text label"></div>
+
+  </template>
+  <script>Polymer("th-bubble",{chartData:[{endValue:75,startValue:0,color:"",prefix:"-",image:"",suffix:"",label:""}],duration:2,chartSize:125,observe:{"chartData[0].endValue":"chartDataChanged"},init:function(){var self=this;self.svg=d3.select(self.$.chart);self.data=self.chartData[0];self.data.startValue=self.data.startValue||0;self.data.prefix=self.data.prefix||"";self.data.suffix=self.data.suffix||"";self.data.label=self.data.label||"";self.image=self.data.image||"";if(self.data.prefix=="-"){self._bubbleStart=100-self.data.startValue;self._bubbleEnd=100-self.data.endValue}else{self._bubbleStart=self.data.startValue;self._bubbleEnd=self.data.endValue}self.container=self.svg.append("g").attr("class","container");if(self.image){self.image=self.container.append("image").attr("xlink:href",self.image)}else{self.bubble=self.container.append("circle").attr("class","bubble data0")}self._setupElements()},_setupElements:function(){var self=this;self.bubbleArea=self.chartSize;self.numberSize=Math.max(self.chartSize*.15,14);self.bubbleRadiusStart=self.bubbleArea*(self._bubbleStart/100)/2;self.bubbleRadiusEnd=self.bubbleArea*(self._bubbleEnd/100)/2;self.svg.attr("width",self.bubbleArea).attr("height",self.bubbleArea);self.container.attr("transform","translate("+self.bubbleArea/2+","+self.bubbleArea/2+")");if(self.image){self.image.attr("x",-self.bubbleRadiusStart).attr("y",-self.bubbleRadiusStart).attr("width",self.bubbleRadiusStart*2).attr("height",self.bubbleRadiusStart*2)}else{self.bubble.attr("r",self.bubbleRadiusStart).style("fill",self.data.color).style("stroke",self.data.color)}self.value=d3.select(self.$.value).text(self.data.prefix+self.data.startValue+self.data.suffix);self.label=d3.select(self.$.label).text(self.data.label)},reset:function(){var self=this;self.bubble.transition().duration(self.duration*1e3).attr("r",self.bubbleRadiusStart)},animate:function(){var self=this;if(self.image){self.image.transition().duration(self.duration*1e3).attr("x",-self.bubbleRadiusEnd).attr("y",-self.bubbleRadiusEnd).attr("width",self.bubbleRadiusEnd*2).attr("height",self.bubbleRadiusEnd*2)}else{self.bubble.transition().duration(self.duration*1e3).attr("r",self.bubbleRadiusEnd)}var i=d3.interpolate(self.data.startValue,self.data.endValue);self.value.transition().duration(self.duration*1e3).tween("countup",function(){return function(t){var num=i(t);self.value.text(self.data.prefix+Math.round(num)+self.data.suffix)}})},updateData:function(){var self=this;self._setupElements();self.animate()},resize:function(){var self=this;self._setupElements();self.animate()}});</script>
+</polymer-element>
+</div><div hidden>
+
+
+<polymer-element name="th-gauge-chart" extends="th-d3-chart" assetpath="../bower_components/thelma-charts/">
+
+  <template>
+      <core-style ref="theme"></core-style>
+      <style>:host{display:inline-block;position:relative}#data_errors{display:none;font-size:14px;color:red;position:absolute;top:0;left:0}</style>
+
+      <svg id="chart"></svg>
+
+      <ul id="data_errors">
+      </ul> 
+
+      <!-- to allow embeded th-editor component -->
+      <content select="th-editor"></content> 
+      
+  </template>
+
+  <script>Polymer("th-gauge-chart",{chartData:[{value:65,min:0,max:100,ticks:5}],animationSpeed:3,init:function(){var self=this,margin={top:20,bottom:25,left:20,right:20,label:8},width=self.chartWidth,height=width/2,pi=Math.PI,outerRadius=width*.5,innerRadius=width*.43,meterWidth=outerRadius-innerRadius,numTicks=self.chartData[0].ticks;self.value=self.chartData[0].value;self.min=self.chartData[0].min;self.max=self.chartData[0].max;self._prevProgress=self.min;self.scale=d3.scale.linear().domain([self.min,self.max]).range([-90,90]);self.arcScale=d3.scale.linear().domain([self.min,self.max]).range([0,1]);self.height=height;self.data=self.chartData;self.arc=d3.svg.arc().startAngle(0*(Math.PI/180)).endAngle(180*(Math.PI/180)).innerRadius(innerRadius).outerRadius(outerRadius);var svg=d3.select(self.$.chart);var container=svg.attr("width",width+margin.left+margin.right).attr("height",height+margin.top+margin.bottom).append("g").attr("transform","translate("+(width/2+margin.left)+","+(height+margin.top)+")");self.meter=container.append("g").attr("class","progress-meter");self.meter.selectAll("path.background").data(self.data).enter().append("path").attr("class","background data2").attr("transform","translate(0, 0) rotate(270)").attr("d",self.arc);self.foreground=self.meter.selectAll("path.foreground").data(self.data).enter().append("path").attr("class","foreground data0").attr("transform","translate(0,0) rotate(270)");var needleDims={length:height+meterWidth/2,radius:meterWidth/1.5,centerX:0,centerY:0};needleDims.topX=needleDims.centerX-0;needleDims.topY=needleDims.centerY-needleDims.length;needleDims.leftX=needleDims.centerX+needleDims.radius;needleDims.leftY=needleDims.centerY-0;needleDims.rightX=needleDims.centerX-needleDims.radius;needleDims.rightY=needleDims.centerY-0;var lineData=[[needleDims.topX,needleDims.topY],[needleDims.leftX,needleDims.leftY],[needleDims.rightX,needleDims.rightY]];var needleLine=d3.svg.line().interpolate("linear");var needle=self.meter.append("g").data([lineData]).attr("transform","translate(0, 0) rotate("+self.scale(self.min)+")").attr("class","needle fill-foreground");var needlePoint=needle.append("path").attr("d",needleLine);var needleHead=needle.append("circle").attr("r",needleDims.radius).attr("cy",0).attr("cx",0);if(numTicks>0){self.meter.selectAll("text.tick").data(self.scale.ticks(numTicks)).enter().append("text").attr("class","tick label").attr("text-anchor","middle").attr("transform",function(d){return"rotate("+self.scale(d)+") translate(0,"+(-width/2-margin.label)+")"}).text(d3.format(",g"))}else{self.minLabel=self.meter.selectAll("text.min").attr("x",width/2).attr("y",0).data(self.data).enter().append("text").attr("class","fill-foreground min label").attr("text-anchor","middle").attr("dy",18).attr("dx",-width/2+meterWidth/2).text(function(d){return d.min});self.maxLabel=self.meter.selectAll("text.max").data(self.data).enter().append("text").attr("class","fill-foreground max label").attr("text-anchor","middle").attr("dy",20).attr("dx",width/2-meterWidth/2).text(function(d){return d.max})}},reset:function(){var self=this;self.meter.selectAll("path.foreground").attr("d",function(){return self.arc.endAngle(0)()});self.meter.selectAll("text.label").text("");self.meter.selectAll(".needle").attr("transform","rotate("+self.scale(self.min)+")")},animate:function(){var self=this,pi=Math.PI;self.meter.selectAll("path.foreground").transition().call(ease).attrTween("d",function(d){var i=d3.interpolate(self.arcScale(self._prevProgress),self.arcScale(d.value));return function(t){var progress=i(t);return self.arc.endAngle(pi*progress)()};self._prevProgress=progress});self.meter.selectAll(".needle").transition().call(ease).attr("transform","rotate("+self.scale(self.value)+")");function ease(el){el.delay(1e3).ease("elastic",1,.7).duration(self.animationSpeed*1e3)}},chartSpecificDataValidate:function(){var self=this;var errors=[],value=self.chartData[0].value,min=self.chartData[0].min,max=self.chartData[0].max;if(value===undefined){errors.push({input:self.chartData[0],msg:"Please provide a value for the chart."})}else if(max===undefined||min===undefined){errors.push({input:self.chartData[0],msg:"Please provide min and max values for the chart."})}else if(value>max||value<min){errors.push({input:value,msg:value+" is invalid. You must enter a number between "+min+" and "+max+"."})}return errors}});</script>
+</polymer-element>
+
+</div><div hidden>
+
+<!--
+Copyright 2013 The Polymer Authors. All rights reserved.
+Use of this source code is governed by a BSD-style
+license that can be found in the LICENSE file.
+-->
+<!--
+/**
+ * @module Polymer UI Elements
+ */
+/**
+ * polymer-ui-accordion is a simple accordion style element.  It should 
+ * be used in conjunction with polymer-ui-collapsible.  By default
+ * only one collapsible stays open at a time.  To have multiple
+ * collapsibles open set "multi" property on the accordion.
+ *
+ * Example:
+ *
+ *     <polymer-ui-accordion selected="0">
+ *       <polymer-ui-collapsible>
+ *         <div class="polymer-ui-collapsible-header">Header 1</div>
+ *         <div>....</div>
+ *       </polymer-ui-collapsible>
+ *       <polymer-ui-collapsible>
+ *         <div class="polymer-ui-collapsible-header">Header 2</div>
+ *         <div>....</div>
+ *       </polymer-ui-collapsible>
+ *       <polymer-ui-collapsible>
+ *         <div class="polymer-ui-collapsible-header">Header 3</div>
+ *         <div>....</div>
+ *       </polymer-ui-collapsible>
+ *     </polymer-ui-accordion>
+ *
+ * @class polymer-ui-accordion
+ * @extends polymer-selector
+ */
+-->
+
+<!--
+Copyright 2013 The Polymer Authors. All rights reserved.
+Use of this source code is governed by a BSD-style
+license that can be found in the LICENSE file.
+-->
+<!--
+/**
+ * @module Polymer Elements
+ */
+/**
+ * polymer-selector is used to manage a list of elements that can be selected.
+ * The attribute "selected" indicates which item element is being selected.
+ * The attribute "multi" indicates if multiple items can be selected at once.
+ * Tapping on the item element would fire "polymer-activate" event. Use
+ * "polymer-select" event to listen for selection changes.
+ *
+ * Example:
+ *
+ *     <polymer-selector selected="0">
+ *       <div>Item 1</div>
+ *       <div>Item 2</div>
+ *       <div>Item 3</div>
+ *     </polymer-selector>
+ *
+ * polymer-selector is not styled.  So one needs to use "polymer-selected" CSS
+ * class to style the selected element.
+ * 
+ *     <style>
+ *       .item.polymer-selected {
+ *         background: #eee;
+ *       }
+ *     </style>
+ *     ...
+ *     <polymer-selector>
+ *       <div class="item">Item 1</div>
+ *       <div class="item">Item 2</div>
+ *       <div class="item">Item 3</div>
+ *     </polymer-selector>
+ *
+ * @class polymer-selector
+ * @status stable
+ */
+/**
+ * Fired when an item's selection state is changed. This event is fired both
+ * when an item is selected or deselected. The `isSelected` detail property
+ * contains the selection state.
+ * 
+ * @event polymer-select
+ * @param {Object} detail
+ *   @param {boolean} detail.isSelected true for selection and false for deselection
+ *   @param {Object} detail.item the item element
+ */
+/**
+ * Fired when an item element is tapped.
+ * 
+ * @event polymer-activate
+ * @param {Object} detail
+ *   @param {Object} detail.item the item element
+ */
+-->
+
+<!--
+Copyright 2013 The Polymer Authors. All rights reserved.
+Use of this source code is governed by a BSD-style
+license that can be found in the LICENSE file.
+-->
+<!--
+/**
+ * @module Polymer Elements
+ */
+-->
+<!--
+/**
+ * The polymer-selection element is used to manage selection state. It has no
+ * visual appearance and is typically used in conjuneciton with another element.
+ * For example, <a href="polymer-selector.html">polymer-selector</a>
+ * use a polymer-selection to manage selection.
+ *
+ * To mark an item as selected, call the select(item) method on 
+ * polymer-selection. Notice that the item itself is an argument to this method.
+ * The polymer-selection element manages selection state for any given set of
+ * items. When an item is selected, the `polymer-select` event is fired.
+ * The attribute "multi" indicates if multiple items can be selected at once.
+ * 
+ * Example:
+ *
+ *     <polymer-element name="selection-example">
+ *        <template>
+ *          <style>
+ *            ::-webkit-distributed(> .selected) {
+ *              font-weight: bold;
+ *              font-style: italic;
+ *            }
+ *          </style>
+ *          <ul on-tap="{{itemTapAction}}">
+ *            <content></content>
+ *          </ul>
+ *          <polymer-selection id="selection" multi on-polymer-select="{{selectAction}}"></polymer-selection>
+ *        </template>
+ *        <script>
+ *          Polymer('selection-example', {
+ *            itemTapAction: function(e) {
+ *              this.$.selection.select(e.target);
+ *            },
+ *            selectAction: function(e, detail) {
+ *              detail.item.classList.toggle('selected', detail.isSelected);
+ *            }
+ *          });
+ *        </script>
+ *     </polymer-element>
+ *
+ *     <selection-example>
+ *       <li>Red</li>
+ *       <li>Green</li>
+ *       <li>Blue</li>
+ *     </selection-example>
+ *
+ * @class polymer-selection
+ */
+ /**
+ * Fired when an item's selection state is changed. This event is fired both
+ * when an item is selected or deselected. The `isSelected` detail property
+ * contains the selection state.
+ * 
+ * @event polymer-select
+ * @param {Object} detail
+ *   @param {boolean} detail.isSelected true for selection and false for deselection
+ *   @param {Object} detail.item the item element
+ */
+-->
+
+
+<polymer-element name="polymer-selection" attributes="multi" assetpath="../bower_components/polymer-selection/">
+  <template>
+    <style>:host{display:none!important}</style>
+  </template>
+  <script>Polymer("polymer-selection",{multi:false,ready:function(){this.clear()},clear:function(){this.selection=[]},getSelection:function(){return this.multi?this.selection:this.selection[0]},isSelected:function(item){return this.selection.indexOf(item)>=0},setItemSelected:function(item,isSelected){if(item!==undefined&&item!==null){if(isSelected){this.selection.push(item)}else{var i=this.selection.indexOf(item);if(i>=0){this.selection.splice(i,1)}}this.fire("polymer-select",{isSelected:isSelected,item:item})}},select:function(item){if(this.multi){this.toggle(item)}else if(this.getSelection()!==item){this.setItemSelected(this.getSelection(),false);this.setItemSelected(item,true)}},toggle:function(item){this.setItemSelected(item,!this.isSelected(item))}});</script>
+</polymer-element>
+
+
+<polymer-element name="polymer-selector" attributes="selected multi valueattr selectedClass selectedProperty selectedAttribute selectedItem selectedModel selectedIndex notap target itemsSelector activateEvent" assetpath="../bower_components/polymer-selector/">
+  <template>
+    <polymer-selection id="selection" multi="{{multi}}" on-polymer-select="{{selectionSelect}}"></polymer-selection>
+    <content id="items" select="*"></content>
+  </template>
+  <script>Polymer("polymer-selector",{selected:null,multi:false,valueattr:"name",selectedClass:"polymer-selected",selectedProperty:"",selectedAttribute:"active",selectedItem:null,selectedModel:null,selectedIndex:-1,target:null,itemsSelector:"",activateEvent:"tap",notap:false,ready:function(){this.activateListener=this.activateHandler.bind(this);this.observer=new MutationObserver(this.updateSelected.bind(this));if(!this.target){this.target=this}},get items(){var nodes=this.target!==this?this.itemsSelector?this.target.querySelectorAll(this.itemsSelector):this.target.children:this.$.items.getDistributedNodes();return Array.prototype.filter.call(nodes||[],function(n){return n&&n.localName!=="template"})},targetChanged:function(old){if(old){this.removeListener(old);this.observer.disconnect()}if(this.target){this.addListener(this.target);this.observer.observe(this.target,{childList:true})}},addListener:function(node){node.addEventListener(this.activateEvent,this.activateListener)},removeListener:function(node){node.removeEventListener(this.activateEvent,this.activateListener)},get selection(){return this.$.selection.getSelection()},selectedChanged:function(){this.updateSelected()},updateSelected:function(){this.validateSelected();if(this.multi){this.clearSelection();this.selected&&this.selected.forEach(function(s){this.valueToSelection(s)},this)}else{this.valueToSelection(this.selected)}},validateSelected:function(){if(this.multi&&!Array.isArray(this.selected)&&this.selected!==null&&this.selected!==undefined){this.selected=[this.selected]}},clearSelection:function(){if(this.multi){this.selection.slice().forEach(function(s){this.$.selection.setItemSelected(s,false)},this)}else{this.$.selection.setItemSelected(this.selection,false)}this.selectedItem=null;this.$.selection.clear()},valueToSelection:function(value){var item=value===null||value===undefined?null:this.items[this.valueToIndex(value)];this.$.selection.select(item)},updateSelectedItem:function(){this.selectedItem=this.selection},selectedItemChanged:function(){if(this.selectedItem){var t=this.selectedItem.templateInstance;this.selectedModel=t?t.model:undefined}else{this.selectedModel=null}this.selectedIndex=this.selectedItem?parseInt(this.valueToIndex(this.selected)):-1},valueToIndex:function(value){for(var i=0,items=this.items,c;c=items[i];i++){if(this.valueForNode(c)==value){return i}}return value},valueForNode:function(node){return node[this.valueattr]||node.getAttribute(this.valueattr)},selectionSelect:function(e,detail){this.updateSelectedItem();if(detail.item){this.applySelection(detail.item,detail.isSelected)}},applySelection:function(item,isSelected){if(this.selectedClass){item.classList.toggle(this.selectedClass,isSelected)}if(this.selectedProperty){item[this.selectedProperty]=isSelected}if(this.selectedAttribute&&item.setAttribute){if(isSelected){item.setAttribute(this.selectedAttribute,"")}else{item.removeAttribute(this.selectedAttribute)}}},activateHandler:function(e){if(!this.notap){var i=this.findDistributedTarget(e.target,this.items);if(i>=0){var item=this.items[i];var s=this.valueForNode(item)||i;if(this.multi){if(this.selected){this.addRemoveSelected(s)}else{this.selected=[s]}}else{this.selected=s}this.asyncFire("polymer-activate",{item:item})}}},addRemoveSelected:function(value){var i=this.selected.indexOf(value);if(i>=0){this.selected.splice(i,1)}else{this.selected.push(value)}this.valueToSelection(value)},findDistributedTarget:function(target,nodes){while(target&&target!=this){var i=Array.prototype.indexOf.call(nodes,target);if(i>=0){return i}target=target.parentNode}}});</script>
+</polymer-element>
+
+<!--
+Copyright 2013 The Polymer Authors. All rights reserved.
+Use of this source code is governed by a BSD-style
+license that can be found in the LICENSE file.
+-->
+<!--
+/**
+ * @module Polymer UI Elements
+ */
+/**
+ * polymer-ui-collapsible has a header and a body and the body appears or
+ * disappears based on "active" property.  Tapping on the header will toggle
+ * the active state.  User needs to put the class "polymer-ui-collapsible-header"
+ * on the element to indicate it represents a header.
+ *
+ * Example:
+ *
+ *     <polymer-ui-collapsible>
+ *       <div class="polymer-ui-collapsible-header">Title</div>
+ *       <div>
+ *         some content...
+ *       </div>
+ *     </polymer-ui-collapsible>
+ *
+ * @class polymer-ui-collapsible
+ */
+-->
+
+<!--
+Copyright 2013 The Polymer Authors. All rights reserved.
+Use of this source code is governed by a BSD-style
+license that can be found in the LICENSE file.
+-->
+<!--
+/**
+ * @module Polymer Elements
+ */
+/**
+ * polymer-collapse is used to add collapsible behavior to the
+ * target element.  It adjusts the height or width of the target element
+ * to make the element collapse and expand.
+ *
+ * Example:
+ *
+ *     <button on-click="{{toggle}}">toggle collapse</button>
+ *     <div id="demo">
+ *       ...
+ *     </div>
+ *     <polymer-collapse id="collapse" targetId="demo"></polymer-collapse>
+ *
+ *     ...
+ *
+ *     toggle: function() {
+ *       this.$.collapse.toggle();
+ *     }
+ *
+ * @class polymer-collapse
+ */
+-->
+
+
+<polymer-element name="polymer-collapse" attributes="targetId target horizontal closed duration fixedSize size" assetpath="../bower_components/polymer-collapse/">
+  <template>
+    <style polymer-scope="controller">.polymer-collapse-closed{display:none}</style>
+    <style>.polymer-collapse-closed{display:none}</style>
+    <style>:host{display:none}</style>
+  </template>
+  <script>Polymer("polymer-collapse",{targetId:"",target:null,horizontal:false,closed:false,duration:.33,fixedSize:false,size:null,attached:function(){this.installControllerStyles();this.async(function(){this.afterInitialUpdate=true})},detached:function(){if(this.target){this.removeListeners(this.target)}},targetIdChanged:function(){var p=this.parentNode;while(p.parentNode){p=p.parentNode}this.target=p.querySelector("#"+this.targetId)},targetChanged:function(old){if(old){this.removeListeners(old)}this.horizontalChanged();this.isTargetReady=!!this.target;if(this.target){this.target.style.overflow="hidden";this.addListeners(this.target);this.toggleClosedClass(true)}if(!this.fixedSize||!this.closed){this.update()}},addListeners:function(node){this.transitionEndListener=this.transitionEndListener||this.transitionEnd.bind(this);node.addEventListener("webkitTransitionEnd",this.transitionEndListener);node.addEventListener("transitionend",this.transitionEndListener)},removeListeners:function(node){node.removeEventListener("webkitTransitionEnd",this.transitionEndListener);node.removeEventListener("transitionend",this.transitionEndListener)},horizontalChanged:function(){this.dimension=this.horizontal?"width":"height"},closedChanged:function(){this.update()},toggle:function(){this.closed=!this.closed},setTransitionDuration:function(duration){var s=this.target.style;s.webkitTransition=s.transition=duration?this.dimension+" "+duration+"s":null;if(duration===0){this.async("transitionEnd")}},transitionEnd:function(){if(!this.closed&&!this.fixedSize){this.updateSize("auto",null)}this.setTransitionDuration(null);this.toggleClosedClass(this.closed)},toggleClosedClass:function(add){this.hasClosedClass=add;this.target.classList.toggle("polymer-collapse-closed",add)},updateSize:function(size,duration,forceEnd){if(duration){this.calcSize()}this.setTransitionDuration(duration);var s=this.target.style;var nochange=s[this.dimension]===size;s[this.dimension]=size;if(forceEnd&&nochange){this.transitionEnd()}},update:function(){if(!this.target){return}if(!this.isTargetReady){this.targetChanged()}this.horizontalChanged();this[this.closed?"hide":"show"]()},calcSize:function(){return this.target.getBoundingClientRect()[this.dimension]+"px"},getComputedSize:function(){return getComputedStyle(this.target)[this.dimension]},show:function(){this.toggleClosedClass(false);if(!this.afterInitialUpdate){this.transitionEnd();return}if(!this.fixedSize){this.updateSize("auto",null);var s=this.calcSize();this.updateSize(0,null)}this.async(function(){this.updateSize(this.size||s,this.duration,true)})},hide:function(){if(this.hasClosedClass&&!this.fixedSize){return}if(this.fixedSize){this.size=this.getComputedSize()}else{this.updateSize(this.calcSize(),null)}this.async(function(){this.updateSize(0,this.duration)})}});</script>
+</polymer-element>
+
+
+<polymer-element name="polymer-ui-collapsible" assetpath="../bower_components/polymer-ui-collapsible/">
+  <template>
+    <style>:host{display:block}#collapsibleBody{height:0}</style>
+    <div on-tap="{{headerTap}}">
+      <content select=".polymer-ui-collapsible-header"></content>
+    </div>
+    <div id="collapsibleBody" on-tap="{{bodyTap}}">
+      <content></content>
+    </div>
+    <polymer-collapse targetid="collapsibleBody" closed="{{!active}}"></polymer-collapse>
+  </template>
+  <script>Polymer("polymer-ui-collapsible",{publish:{notap:false,active:{value:false,reflect:true}},toggle:function(){this.active=!this.active},headerTap:function(){if(!this.notap){this.toggle()}},bodyTap:function(e){e.notap=true}});</script>
+</polymer-element>
+
+
+<polymer-element name="polymer-ui-accordion" extends="polymer-selector" assetpath="../bower_components/polymer-ui-accordion/">
+  <template>
+    <style>:host{display:block}</style>
+    <shadow></shadow>
+  </template>
+  <script>Polymer("polymer-ui-accordion",{activateHandler:function(e){if(!e.notap){this.super(arguments)}}});</script>
+</polymer-element>
+
+<!--
+Copyright (c) 2014 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE
+The complete set of authors may be found at http://polymer.github.io/AUTHORS
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS
+-->
+
+<!--
+/**
+ * core-input is an unstyled single- or multi-line text field where user can
+ * enter input.
+ *
+ * Example:
+ *
+ *     <core-input placeholder="Placeholder text here"></core-input>
+ *
+ *     <core-input multiline placeholder="Enter multiple lines here"></core-input>
+ *
+ * The text input's value is considered "committed" if the user hits the "enter"
+ * key or blurs the input after changing the value. The `change` event is fired
+ * when the value becomes committed, and the committed value is stored in the
+ * `value` property. The current value of the input is stored in the `inputValue`
+ * property.
+ *
+ * Validation
+ * ----------
+ *
+ * core-input can optionally validate the value using the HTML5 constraints API,
+ * similar to native inputs. There are two methods to enable input validation:
+ *
+ * 1. By setting the `type` attribute. For example, setting it to `email` will
+ *    check the value is a valid email, and setting it to `number` will check
+ *    the input is a number.
+ *
+ * 2. By setting attributes related to validation. The attributes are `pattern`,
+ *    `min`, `max`, `step` and `required`.
+ *
+ * Only `required` is supported for multiline inputs currently.
+ *
+ * Example:
+ *
+ *     <core-input type="email" placeholder="enter your email"></core-input>
+ *
+ *     <core-input type="number" min="5" placeholder="enter a number greater than or equal to 5"></core-input>
+ *
+ *     <core-input pattern=".*abc.*" placeholder="enter something containing 'abc'"></core-input>
+ *
+ * See https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/HTML5/Constraint_validation
+ * for more info on validation.
+ *
+ * @group Polymer Core Elements
+ * @element core-input
+ * @homepage github.io
+ */
+-->
+
+<!--
+Fired when the inputValue of is changed. This is the same event as the DOM
+"input" event.
+
+@event input
+-->
+
+<!--
+Fired when the user commits the value of the input, either by the hitting the
+`enter` key or blurring the input after the changing the inputValue. Also see the
+DOM "change" event.
+
+@event change
+-->
+
+<!--
+Fired when the inputValue of this text input changes and fails validation.
+
+@event input-invalid
+@param {Object} detail
+@param {string} value The text input's inputValue.
+-->
+
+<!--
+Fired when the inputValue of this text input changes and passes validation.
+
+@event input-valid
+@param {Object} detail
+@param {string} value The text input's inputValue.
+-->
+
+
+<polymer-element name="core-input" on-focus="{{focusAction}}" assetpath="../bower_components/core-input/">
+
+  <template>
+
+    <style>:host{display:inline-block;text-align:inherit;color:#ccc;position:relative;width:20em}:host:hover{cursor:text}input,textarea{font:inherit;width:100%;margin:0;padding:0;background-color:transparent;border:none;outline:0;width:100%}textarea{resize:none}textarea[fit]{position:absolute;top:0;left:0;right:0;bottom:0}</style>
+
+    <template if="{{multiline}}">
+      <textarea id="input" value="{{inputValue}}" rows="{{rows}}" fit?="{{rows === &apos;fit&apos;}}" disabled?="{{disabled}}" placeholder="{{placeholder}}" autofocus?="{{autofocus}}" required?="{{required}}" readonly?="{{readonly}}" aria-label="{{label || placeholder}}" aria-invalid="{{invalid}}" on-change="{{inputChangeAction}}" on-focus="{{inputFocusAction}}" on-blur="{{inputBlurAction}}"></textarea>
+    </template>
+
+    <template if="{{!multiline}}">
+      <input id="input" value="{{inputValue}}" disabled?="{{disabled}}" type="{{type}}" placeholder="{{placeholder}}" autofocus?="{{autofocus}}" required?="{{required}}" readonly?="{{readonly}}" pattern="{{pattern}}" min="{{min}}" max="{{max}}" step="{{step}}" maxlength="{{maxlength}}" aria-label="{{label || placeholder}}" aria-invalid="{{invalid}}" on-keydown="{{keydownAction}}" on-change="{{inputChangeAction}}" on-focus="{{inputFocusAction}}" on-blur="{{inputBlurAction}}">
+    </template>
+
+  </template>
+
+  <script>Polymer("core-input",{publish:{placeholder:"",disabled:false,readonly:false,autofocus:false,multiline:false,rows:"fit",inputValue:"",value:"",type:"text",required:false,pattern:".*",min:null,max:null,step:null,maxlength:null,invalid:false},ready:function(){this.handleTabindex(this.getAttribute("tabindex"))},invalidChanged:function(){this.classList.toggle("invalid",this.invalid);this.fire("input-"+(this.invalid?"invalid":"valid"),{value:this.inputValue})},inputValueChanged:function(){this.updateValidity_()},valueChanged:function(){this.inputValue=this.value},requiredChanged:function(){this.updateValidity_()},attributeChanged:function(attr,oldVal,curVal){if(attr==="tabindex"){this.handleTabindex(curVal)}},handleTabindex:function(tabindex){if(tabindex>0){this.$.input.setAttribute("tabindex",-1)}else{this.$.input.removeAttribute("tabindex")}},commit:function(){this.value=this.inputValue},updateValidity_:function(){if(this.$.input.willValidate){this.invalid=!this.$.input.validity.valid}},keydownAction:function(){if(this.type==="number"){this.async(function(){this.updateValidity_()})}},inputChangeAction:function(){this.commit();if(!window.ShadowDOMPolyfill){this.fire("change",null,this)}},focusAction:function(e){if(this.getAttribute("tabindex")>0){this.$.input.focus()}},inputFocusAction:function(e){if(window.ShadowDOMPolyfill){this.fire("focus",null,this,false)}},inputBlurAction:function(){if(window.ShadowDOMPolyfill){this.fire("blur",null,this,false)}},blur:function(){this.$.input.blur()},click:function(){this.$.input.click()},focus:function(){this.$.input.focus()},select:function(){this.$.input.focus()},setSelectionRange:function(selectionStart,selectionEnd,selectionDirection){this.$.input.setSelectionRange(selectionStart,selectionEnd,selectionDirection)},setRangeText:function(replacement,start,end,selectMode){if(!this.multiline){this.$.input.setRangeText(replacement,start,end,selectMode)}},stepDown:function(n){if(!this.multiline){this.$.input.stepDown(n)}},stepUp:function(n){if(!this.multiline){this.$.input.stepUp(n)}},get willValidate(){return this.$.input.willValidate},get validity(){return this.$.input.validity},get validationMessage(){return this.$.input.validationMessage},checkValidity:function(){var r=this.$.input.checkValidity();this.updateValidity_();return r},setCustomValidity:function(message){this.$.input.setCustomValidity(message);this.updateValidity_()}});</script>
+
+</polymer-element>
+
+
+
+<polymer-element name="th-editor" attributes="" assetpath="../bower_components/thelma-data/">
+  <template>
+    <style>:host{font-size:12px}textarea,input{outline:0;background-color:rgba(255,255,255,.3);border:0}.panel{position:absolute;top:5px;right:-200px;color:#000;width:150px;background:rgba(255,255,255,.7);z-index:2;padding:3px}.panel label{display:inline-block}.panel ul li{height:25px}.input-field{width:50px;float:right}ul{list-style:none;margin:0;padding:0}a{color:#555}.top_handle{position:absolute;width:8px;height:8px;border-top:1px solid #000;border-left:1px solid #000;top:0;left:0;z-index:100}#resize_handle{position:absolute;width:8px;height:8px;border-bottom:2px solid #000;border-right:2px solid #000;cursor:move;bottom:0;right:0;z-index:100}.dragging{opacity:.5}.polymer-ui-collapsible-header{cursor:pointer}</style>
+    <div class="top_handle"></div>
+    <div id="resize_handle" draggable="true"></div>
+    <div class="panel">
+      <polymer-ui-accordion selected="none">
+      <polymer-ui-collapsible>
+        <div class="polymer-ui-collapsible-header"><h4>Data</h4></div>
+        <div class="content">
+        <template repeat="{{dataItem, index of chartData  }}">
+          <polymer-ui-accordion selected="none">
+            <polymer-ui-collapsible>          
+              <div class="polymer-ui-collapsible-header">{{index}}:</div>
+
+              <ul class="content">
+                <template repeat="{{field in chartDataFields}}">
+                  <li>
+                    <label>{{field.friendly}}:</label>
+
+                      <!--     
+                      core-input not working, error when binding value                  
+
+                      <core-input id="data_{{index}}_{{field.name}}" value="{{field.friendly}}" placeHolder="{{field.friendly}}"></core-input>
+                       -->
+                      <input type="text" class="input-field" id="data_{{index}}_{{field.name}}" value="{{chartData[index][field.name]}}"> 
+ 
+                  </li>
+                </template>
+                <template if="{{elementMeta.inputAttr.chartData.type==&apos;table-repeating&apos;}}">
+                  <a href="../bower_components/thelma-data/javascript:void(0)" id="remove_data_{{index}}">remove</a>
+                </template>
+
+                <hr>
+              </ul>
+            </polymer-ui-collapsible>
+          </polymer-ui-accordion>
+        </template>
+<!--       
+        for donut chart (not working)
+        <template if="{{elementMeta.inputAttr.chartData.type=='table-repeating'}}">
+
+ -->
+        <a href="../bower_components/thelma-data/javascript:void(0)" id="add_data" class="{{elementToEdit.id}}">Add Datapoint</a>
+
+<!--       </template>
+ -->
+
+        </div>
+      </polymer-ui-collapsible>
+      <polymer-ui-collapsible>
+        <div class="polymer-ui-collapsible-header"><h4>Functions</h4></div>
+        <ul class="content">
+            <li>
+              <a id="reset_function" href="../bower_components/thelma-data/javascript:void(0)">Reset</a>
+            </li>
+            <li>
+              <a id="animate_function" href="../bower_components/thelma-data/javascript:void(0)">Animate</a>
+            </li>
+        </ul>
+      </polymer-ui-collapsible>
+      <polymer-ui-collapsible>
+        <div class="polymer-ui-collapsible-header"><h4>Properties</h4></div>
+        <ul class="content">
+          <template repeat="{{field in propertiesFields}}">
+            <li>
+              <label>{{field}}:</label><input type="text" class="input-field" id="{{field}}" value="{{elementToEdit[field]}}" disabled> 
+           </li>
+          </template>
+        </ul>
+      </polymer-ui-collapsible>
+    </polymer-ui-accordion>
+
+    </div>
+  </template>
+
+  <script>Polymer("th-editor",{elementMeta:{},domReady:function(){var self=this;this.elementToEdit=this.parentNode;console.log("this.elementToEdit");console.log(this.elementToEdit);this.elementMeta=this.elementToEdit.getMetaData();this.chartData=this.elementToEdit.chartData;this.initialState=JSON.parse(this.elementToEdit.getState());var observer=new PathObserver(self.elementToEdit,"chartData");observer.open(function(newValue,oldValue){console.log(newValue);self.chartData=newValue;console.log(self.chartData)});var fieldsObj=this.elementMeta.inputAttr.chartData.fields;this.chartDataFields=[];for(key in fieldsObj){var val=fieldsObj[key];val.name=key;this.chartDataFields.push(val)}this.propertiesFields=[];for(key in this.initialState){if(key!="color"&&key!="chartData"&&key!="chartHeight"&&key!="chartWidth"){this.propertiesFields.push(key)}}self.$.reset_function.addEventListener("click",function(){self.elementToEdit.reset()});self.$.animate_function.addEventListener("click",function(){self.elementToEdit.animate()});var addDataBtn=this.shadowRoot.querySelector("#add_data");console.log(addDataBtn);if(addDataBtn){addDataBtn.addEventListener("click",function(){console.log("button clicked:");console.log(this);var newDataRow={};for(dataIndex in self.chartDataFields){var dataDef=self.chartDataFields[dataIndex];newDataRow[dataDef.name]=dataDef.default}self.chartData.push(newDataRow);console.log(self.chartData);console.log(self.elementToEdit);self.async(function(){self._bindRemoveBtn(self.chartData.length-1);for(i in this.chartDataFields){self._bindDataField(i,self.chartData.length-1)}},null,500)})}this.async(function(){for(j in this.chartData){for(i in this.chartDataFields){self._bindDataField(i,j)}self._bindRemoveBtn(j)}},null,500);this.$.resize_handle.addEventListener("dragstart",function(e){console.log("drag start");this.classList.add("dragging")});this.$.resize_handle.addEventListener("dragend",function(e){console.log("dragged");this.classList.remove("dragging");console.log(e);var chartWidth=self.elementToEdit.chartWidth;var chartHeight=self.elementToEdit.chartHeight;chartWidth=chartWidth+e.layerX;chartHeight=chartHeight+e.layerY;console.log(chartWidth);console.log(chartHeight);self.elementToEdit.chartWidth=chartWidth;self.elementToEdit.chartHeight=chartHeight;self.elementToEdit.resize()})},_bindDataField:function(fieldIndex,rowIndex){var self=this;var fieldName=this.chartDataFields[fieldIndex].name;this.shadowRoot.querySelector("#data_"+rowIndex+"_"+fieldName).addEventListener("keyup",function(){self.chartDataChanged()})},_bindRemoveBtn:function(index){var self=this;var removeBtn=self.shadowRoot.querySelector("#remove_data_"+index);if(removeBtn){removeBtn.addEventListener("click",function(){console.log("clicked");var id=this.id;var indx=id.substring(id.lastIndexOf("_")+1,id.length);self.chartData.splice(indx,1)})}},chartDataChanged:function(){console.log("value changed");this.elementToEdit.updateData()}});</script>
+</polymer-element></div><div hidden>
+<script src="../bower_components/jsplumb/dist/js/dom.jsPlumb-1.6.2.js"></script>
+
+
+
+<polymer-element name="th-anchor" attributes="" assetpath="../bower_components/thelma-data/">
+  <template>
+    <style>:host{font-size:12px}#chartData_anchor1{position:absolute;top:5px;left:5px}#chartData_anchor2{position:absolute;top:25px;left:5px}.anchor{width:5px;height:5px;background-color:#555;cursor:pointer}</style>
+    <div class="anchor_container">
+      <div id="chartData_anchor1" class="anchor"></div>
+      <div id="chartData_anchor2" class="anchor"></div>
+    </div>
+
+  </template>
+
+
+
+  <script>Polymer("th-anchor",{elementMeta:{},domReady:function(){var self=this;self.elementToEdit=self.parentNode;self.elementMeta=self.elementToEdit.getMetaData();self.chartData=self.elementToEdit.chartData;console.log(jsPlumb);var container=self.shadowDom;var j=jsPlumb.getInstance({container:container});console.log(j);var anchor1=self.$.chartData_anchor1;var anchor1=self.$.chartData_anchor2;j.ready(function(){console.log("ready");j.addEndpoint(anchor1);j.addEndpoint(anchor2)})}});</script>
+</polymer-element></div><div hidden>
+<!--
+Copyright (c) 2014 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<!--
+@group Polymer Core Elements
+
+`<core-selector>` is used to manage a list of elements that can be selected.
+
+The attribute `selected` indicates which item element is being selected.
+The attribute `multi` indicates if multiple items can be selected at once.
+Tapping on the item element would fire `core-activate` event. Use
+`core-select` event to listen for selection changes.
+
+Example:
+
+    <core-selector selected="0">
+      <div>Item 1</div>
+      <div>Item 2</div>
+      <div>Item 3</div>
+    </core-selector>
+
+`<core-selector>` is not styled. Use the `core-selected` CSS class to style the selected element.
+
+    <style>
+      .item.core-selected {
+        background: #eee;
+      }
+    </style>
+    ...
+    <core-selector>
+      <div class="item">Item 1</div>
+      <div class="item">Item 2</div>
+      <div class="item">Item 3</div>
+    </core-selector>
+
+@element core-selector
+@status stable
+@homepage github.io
+-->
+
+<!--
+Fired when an item's selection state is changed. This event is fired both
+when an item is selected or deselected. The `isSelected` detail property
+contains the selection state.
+
+@event core-select
+@param {Object} detail
+  @param {boolean} detail.isSelected true for selection and false for deselection
+  @param {Object} detail.item the item element
+-->
+<!--
+Fired when an item element is tapped.
+
+@event core-activate
+@param {Object} detail
+  @param {Object} detail.item the item element
+-->
+
+
+<!--
+Copyright (c) 2014 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+<!--
+@group Polymer Core Elements
+
+The `<core-selection>` element is used to manage selection state. It has no
+visual appearance and is typically used in conjunction with another element.
+For example, [core-selector](#core-selector)
+use a `<core-selection>` to manage selection.
+
+To mark an item as selected, call the `select(item)` method on 
+`<core-selection>`. The item itself is an argument to this method.
+
+The `<core-selection>`element manages selection state for any given set of
+items. When an item is selected, the `core-select` event is fired.
+
+The attribute `multi` indicates if multiple items can be selected at once.
+  
+Example:
+ 
+    <polymer-element name="selection-example">
+       <template>
+         <style>
+           polyfill-next-selector { content: ':host > .selected'; }
+           ::content > .selected {
+             font-weight: bold;
+             font-style: italic;
+           }
+         </style>
+         <ul on-tap="{{itemTapAction}}">
+           <content></content>
+         </ul>
+         <core-selection id="selection" multi
+                         on-core-select="{{selectAction}}"></core-selection>
+       </template>
+       <script>
+         Polymer('selection-example', {
+           itemTapAction: function(e, detail, sender) {
+             this.$.selection.select(e.target);
+           },
+           selectAction: function(e, detail, sender) {
+             detail.item.classList.toggle('selected', detail.isSelected);
+           }
+         });
+       </script>
+    </polymer-element>
+
+    <selection-example>
+      <li>Red</li>
+      <li>Green</li>
+      <li>Blue</li>
+    </selection-example>
+ 
+@element core-selection
+-->
+
+<!--
+Fired when an item's selection state is changed. This event is fired both
+when an item is selected or deselected. The `isSelected` detail property
+contains the selection state.
+
+@event core-select
+@param {Object} detail
+  @param {boolean} detail.isSelected true for selection and false for de-selection
+  @param {Object} detail.item the item element
+-->
+
+
+<polymer-element name="core-selection" attributes="multi" hidden assetpath="../bower_components/core-selection/">
+  <script>Polymer("core-selection",{multi:false,ready:function(){this.clear()},clear:function(){this.selection=[]},getSelection:function(){return this.multi?this.selection:this.selection[0]},isSelected:function(item){return this.selection.indexOf(item)>=0},setItemSelected:function(item,isSelected){if(item!==undefined&&item!==null){if(isSelected){this.selection.push(item)}else{var i=this.selection.indexOf(item);if(i>=0){this.selection.splice(i,1)}}this.fire("core-select",{isSelected:isSelected,item:item})}},select:function(item){if(this.multi){this.toggle(item)}else if(this.getSelection()!==item){this.setItemSelected(this.getSelection(),false);this.setItemSelected(item,true)}},toggle:function(item){this.setItemSelected(item,!this.isSelected(item))}});</script>
+</polymer-element>
+
+
+<polymer-element name="core-selector" attributes="selected multi valueattr selectedClass selectedProperty selectedAttribute selectedItem selectedModel selectedIndex notap target itemsSelector activateEvent" assetpath="../bower_components/core-selector/">
+
+  <template>
+    <core-selection id="selection" multi="{{multi}}" on-core-select="{{selectionSelect}}"></core-selection>
+    <content id="items" select="*"></content>
+  </template>
+
+  <script>Polymer("core-selector",{selected:null,multi:false,valueattr:"name",selectedClass:"core-selected",selectedProperty:"",selectedAttribute:"active",selectedItem:null,selectedModel:null,selectedIndex:-1,target:null,itemsSelector:"",activateEvent:"tap",notap:false,ready:function(){this.activateListener=this.activateHandler.bind(this);this.observer=new MutationObserver(this.updateSelected.bind(this));if(!this.target){this.target=this}},get items(){if(!this.target){return[]}var nodes=this.target!==this?this.itemsSelector?this.target.querySelectorAll(this.itemsSelector):this.target.children:this.$.items.getDistributedNodes();return Array.prototype.filter.call(nodes||[],function(n){return n&&n.localName!=="template"})},targetChanged:function(old){if(old){this.removeListener(old);this.observer.disconnect();this.clearSelection()}if(this.target){this.addListener(this.target);this.observer.observe(this.target,{childList:true});this.updateSelected()}},addListener:function(node){node.addEventListener(this.activateEvent,this.activateListener)},removeListener:function(node){node.removeEventListener(this.activateEvent,this.activateListener)},get selection(){return this.$.selection.getSelection()},selectedChanged:function(){this.updateSelected()},updateSelected:function(){this.validateSelected();if(this.multi){this.clearSelection();this.selected&&this.selected.forEach(function(s){this.valueToSelection(s)},this)}else{this.valueToSelection(this.selected)}},validateSelected:function(){if(this.multi&&!Array.isArray(this.selected)&&this.selected!==null&&this.selected!==undefined){this.selected=[this.selected]}},clearSelection:function(){if(this.multi){this.selection.slice().forEach(function(s){this.$.selection.setItemSelected(s,false)},this)}else{this.$.selection.setItemSelected(this.selection,false)}this.selectedItem=null;this.$.selection.clear()},valueToSelection:function(value){var item=value===null||value===undefined?null:this.items[this.valueToIndex(value)];this.$.selection.select(item)},updateSelectedItem:function(){this.selectedItem=this.selection},selectedItemChanged:function(){if(this.selectedItem){var t=this.selectedItem.templateInstance;this.selectedModel=t?t.model:undefined}else{this.selectedModel=null}this.selectedIndex=this.selectedItem?parseInt(this.valueToIndex(this.selected)):-1},valueToIndex:function(value){for(var i=0,items=this.items,c;c=items[i];i++){if(this.valueForNode(c)==value){return i}}return value},valueForNode:function(node){return node[this.valueattr]||node.getAttribute(this.valueattr)},selectionSelect:function(e,detail){this.updateSelectedItem();if(detail.item){this.applySelection(detail.item,detail.isSelected)}},applySelection:function(item,isSelected){if(this.selectedClass){item.classList.toggle(this.selectedClass,isSelected)}if(this.selectedProperty){item[this.selectedProperty]=isSelected}if(this.selectedAttribute&&item.setAttribute){if(isSelected){item.setAttribute(this.selectedAttribute,"")}else{item.removeAttribute(this.selectedAttribute)}}},activateHandler:function(e){if(!this.notap){var i=this.findDistributedTarget(e.target,this.items);if(i>=0){var item=this.items[i];var s=this.valueForNode(item)||i;if(this.multi){if(this.selected){this.addRemoveSelected(s)}else{this.selected=[s]}}else{this.selected=s}this.asyncFire("core-activate",{item:item})}}},addRemoveSelected:function(value){var i=this.selected.indexOf(value);if(i>=0){this.selected.splice(i,1)}else{this.selected.push(value)}this.valueToSelection(value)},findDistributedTarget:function(target,nodes){while(target&&target!=this){var i=Array.prototype.indexOf.call(nodes,target);if(i>=0){return i}target=target.parentNode}}});</script>
+</polymer-element>
+
+
+
+<polymer-element name="th-connector" attributes="" assetpath="../bower_components/thelma-data/">
+  <template>
+    <style>:host{font-size:12px}#chartData_anchor1{position:absolute;top:5px;left:5px}#chartData_anchor2{position:absolute;top:25px;left:5px}.anchor{width:5px;height:5px;background-color:#555;cursor:pointer}.item{width:100%;border-bottom:1px solid #555;line-height:1.4em}.panel{border:1px solid #AAA;background-color:rgba(255,255,255,.2);padding:5px;margin:10px}.panel .selector{display:inline;margin-right:10px}.panel core-selector{width:150px;display:inline-block;vertical-align:top}.panel .core-selected{color:#BBB;border-bottom:1px solid #AAA}.panel label{display:inline-block;vertical-align:top}.connections{margin-top:10px}.connections ul{list-style:none;width:350px;margin:0}.connections .del{float:right}.panel #connect{float:right;margin:10px;display:none}a,a:visited{color:#555;text-decoration:none}.panel h3{font-family:arial;margin:5px}::content .selected-src-element{border:1px solid #6CF;box-sizing:border-box;-moz-box-sizing:border-box;-webkit-box-sizing:border-box}::content .selected-target-element{border:1px solid #0F9;box-sizing:border-box;-moz-box-sizing:border-box;-webkit-box-sizing:border-box}::content>:not(ul){min-width:20px;min-height:20px;border:1px solid #DDD;display:inline-block;position:relative}</style>
+    <div class="connectors">
+    </div>
+
+    <content></content>
+    <div class="panel">
+      <h3>Connection Panel</h3>
+      <div class="from selector">
+        <label for="src_component">From:</label>
+        <core-selector id="src_component">
+          <template repeat="{{el in elements}}">
+            <div class="item">{{el.tagName}}<template if="{{el.id}}">#{{el.id}}</template></div>
+          </template>
+
+        </core-selector>
+        <label for="src_attrs">Attributes:</label>
+        <core-selector id="src_attrs">
+          <template repeat="{{attr in _srcAttrs}}">
+            <div class="item">{{attr}}</div>
+          </template>
+
+        </core-selector>
+      </div>
+      <div class="to selector">
+        <label for="target_component">To:</label>
+        <core-selector id="target_component">
+          <template repeat="{{el in elements}}">
+            <div class="item">{{el.tagName}}<template if="{{el.id}}">#{{el.id}}</template></div>
+          </template>
+
+        </core-selector>
+        <label for="target_attrs">Attributes:</label>
+        <core-selector id="target_attrs">
+          <template repeat="{{attr in _targetAttrs}}">
+            <div class="item">{{attr}}</div>
+          </template>
+
+        </core-selector>
+      </div>
+<!--       <template if="{{_srcPropertySelection && _targetPropertySelection}}">
+ -->        
+          <input type="button" id="connect" value="connect" style="{{(_srcPropertySelection &amp;&amp; _targetPropertySelection) ? &apos;display: block&apos; : &apos;&apos;}}">
+<!--       </template>
+ --> 
+      <div class="connections">
+          <label>connections: <label>
+          <ul>
+          <template repeat="{{connection, index in _connections}}">
+            <li class="connection">{{connection.sourceEl}}->{{connection.sourceProperty}} => 
+                    {{connection.targetEl}}->{{connection.targetProperty}}
+                     <a href="../bower_components/thelma-data/javascript:void(0)" class="del" data-index="{{index}}" on-click="{{_deleteConncetionHandler}}">delete</a></li>
+          </template>
+          </ul>
+      </label></label></div>
+
+    </div>
+
+  </template>
+
+
+
+  <script>Polymer("th-connector",{elements:[],_srcAttrs:[],_targetAttrs:[],_srcElementSelection:null,_srcPropertySelection:null,_targetElementSelection:null,_targetPropertySelection:null,_connections:[],domReady:function(){var self=this;self._updateFields();self.$.src_component.addEventListener("core-select",function(){if(!this.selection){return}var prev=self.querySelector(".selected-src-element");if(prev){prev.classList.remove("selected-src-element")}self.querySelector(this.selection.textContent).classList.add("selected-src-element");self._srcElementSelection=this.selection.textContent;self._srcAttrs=self._displayFeilds(this);self._srcPropertySelection=null});self.$.src_attrs.addEventListener("core-select",function(){if(!this.selection){return}self._srcPropertySelection=this.selection.textContent});self.$.target_component.addEventListener("core-select",function(){if(!this.selection){return}self._targetElementSelection=this.selection.textContent;var prev=self.querySelector(".selected-target-element");if(prev){prev.classList.remove("selected-target-element")}self.querySelector(this.selection.textContent).classList.add("selected-target-element");self._targetAttrs=self._displayFeilds(this);self._targetPropertySelection=null});self.$.target_attrs.addEventListener("core-select",function(){if(!this.selection){return}self._targetPropertySelection=this.selection.textContent});self.$.connect.addEventListener("click",function(){self.connectElements(self._srcElementSelection,self._srcPropertySelection,self._targetElementSelection,self._targetPropertySelection)});self.connectElements("th-csv","filteredData","#filtered","data");self.connectElements("#url","value","th-csv","url");self.connectElements("#col_from","value","th-csv","filter_col_from");self.connectElements("#col_to","value","th-csv","filter_col_to");self.connectElements("#row_from","value","th-csv","filter_row_from");self.connectElements("#row_to","value","th-csv","filter_row_to");self.connectElements("th-csv","data","th-basic-function","dataIn")},_updateFields:function(){var self=this;var boringTags=["div","ul","li","span","th-editor"];var components=self.querySelectorAll("*");[].forEach.call(components,function(el){if(boringTags.indexOf(el.tagName.toLowerCase())<0){self.elements.push(el)}if(typeof el.getMetaData==="function"){}})},_displayFeilds:function(selector){var self=this;var elSelector=selector.selection.textContent;var el=self.querySelector(elSelector);if(!el){return}var attrs=el.publish;var attrsObj=[];for(key in attrs){attrsObj.push(key)}return attrsObj},connectElements:function(source,sourceField,target,targetField){var self=this;var srcEl=typeof source==="string"?self.querySelector(source):source;var targetEl=typeof target==="string"?self.querySelector(target):target;var observer=new PathObserver(srcEl,sourceField);observer.open(function(newValue,oldValue){targetEl[targetField]=newValue});targetEl[targetField]=srcEl[sourceField];self._connections.push({sourceEl:source,sourceProperty:sourceField,targetEl:target,targetProperty:targetField,observer:observer})},_deleteConncetionHandler:function(e,detail,sender){var self=this;var index=e.target.getAttribute("data-index");var observer=self._connections[index].observer;observer.close();self._connections.splice(index,1)}});</script>
+</polymer-element></div><div hidden>
+<!--
+Copyright (c) 2014 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<!--
+@group Polymer Core Elements
+
+The `core-ajax` element exposes `XMLHttpRequest` functionality.
+
+    <core-ajax
+        auto
+        url="http://gdata.youtube.com/feeds/api/videos/"
+        params='{"alt":"json", "q":"chrome"}'
+        handleAs="json"
+        on-core-response="{{handleResponse}}"></core-ajax>
+ 
+With `auto` set to `true`, the element performs a request whenever
+its `url` or `params` properties are changed.
+
+Note: The `params` attribute must be double quoted JSON.
+
+You can trigger a request explicitly by calling `go` on the
+element.
+
+@element core-ajax
+@status beta
+@homepage github.io
+-->
+<!--
+Copyright (c) 2014 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+<!--
+/**
+ * @group Polymer Core Elements
+ *
+ * core-xhr can be used to perform XMLHttpRequests.
+ *
+ *     <core-xhr id="xhr"></core-xhr>
+ *     ...
+ *     this.$.xhr.request({url: url, params: params, callback: callback});
+ *
+ * @element core-xhr
+ */
+-->
+
+
+
+<polymer-element name="core-xhr" hidden assetpath="../bower_components/core-ajax/">
+
+  <script>Polymer("core-xhr",{request:function(options){var xhr=new XMLHttpRequest;var url=options.url;var method=options.method||"GET";var async=!options.sync;var params=this.toQueryString(options.params);if(params&&method=="GET"){url+=(url.indexOf("?")>0?"&":"?")+params}var xhrParams=this.isBodyMethod(method)?options.body||params:null;xhr.open(method,url,async);if(options.responseType){xhr.responseType=options.responseType}if(options.withCredentials){xhr.withCredentials=true}this.makeReadyStateHandler(xhr,options.callback);this.setRequestHeaders(xhr,options.headers);xhr.send(xhrParams);if(!async){xhr.onreadystatechange(xhr)}return xhr},toQueryString:function(params){var r=[];for(var n in params){var v=params[n];n=encodeURIComponent(n);r.push(v==null?n:n+"="+encodeURIComponent(v))}return r.join("&")},isBodyMethod:function(method){return this.bodyMethods[(method||"").toUpperCase()]},bodyMethods:{POST:1,PUT:1,DELETE:1},makeReadyStateHandler:function(xhr,callback){xhr.onreadystatechange=function(){if(xhr.readyState==4){callback&&callback.call(null,xhr.response,xhr)}}},setRequestHeaders:function(xhr,headers){if(headers){for(var name in headers){xhr.setRequestHeader(name,headers[name])}}}});</script>
+  
+</polymer-element>
+
+<polymer-element name="core-ajax" hidden attributes="url handleAs auto params response method headers body contentType withCredentials" assetpath="../bower_components/core-ajax/">
+<script>Polymer("core-ajax",{url:"",handleAs:"",auto:false,params:"",response:null,method:"",headers:null,body:null,contentType:"application/x-www-form-urlencoded",withCredentials:false,xhrArgs:null,ready:function(){this.xhr=document.createElement("core-xhr")},receive:function(response,xhr){if(this.isSuccess(xhr)){this.processResponse(xhr)}else{this.error(xhr)}this.complete(xhr)},isSuccess:function(xhr){var status=xhr.status||0;return!status||status>=200&&status<300},processResponse:function(xhr){var response=this.evalResponse(xhr);this.response=response;this.fire("core-response",{response:response,xhr:xhr})},error:function(xhr){var response=xhr.status+": "+xhr.responseText;this.fire("core-error",{response:response,xhr:xhr})},complete:function(xhr){this.fire("core-complete",{response:xhr.status,xhr:xhr})},evalResponse:function(xhr){return this[(this.handleAs||"text")+"Handler"](xhr)},xmlHandler:function(xhr){return xhr.responseXML},textHandler:function(xhr){return xhr.responseText},jsonHandler:function(xhr){var r=xhr.responseText;try{return JSON.parse(r)}catch(x){console.warn("core-ajax caught an exception trying to parse reponse as JSON:");console.warn("url:",this.url);console.warn(x);return r}},documentHandler:function(xhr){return xhr.response},blobHandler:function(xhr){return xhr.response},arraybufferHandler:function(xhr){return xhr.response},urlChanged:function(){if(!this.handleAs){var ext=String(this.url).split(".").pop();switch(ext){case"json":this.handleAs="json";break}}this.autoGo()},paramsChanged:function(){this.autoGo()},autoChanged:function(){this.autoGo()},autoGo:function(){if(this.auto){this.goJob=this.job(this.goJob,this.go,0)}},go:function(){var args=this.xhrArgs||{};args.body=this.body||args.body;args.params=this.params||args.params;if(args.params&&typeof args.params=="string"){args.params=JSON.parse(args.params)}args.headers=this.headers||args.headers||{};if(args.headers&&typeof args.headers=="string"){args.headers=JSON.parse(args.headers)}if(this.contentType){args.headers["content-type"]=this.contentType}if(this.handleAs==="arraybuffer"||this.handleAs==="blob"||this.handleAs==="document"){args.responseType=this.handleAs}args.withCredentials=this.withCredentials;args.callback=this.receive.bind(this);args.url=this.url;args.method=this.method;return args.url&&this.xhr.request(args)}});</script>
+</polymer-element>
+
+
+<polymer-element name="csv-preview" attributes="data" assetpath="../bower_components/csv-preview/">
+    <template>
+        <style>table{max-width:100%;background-color:transparent;border:1px solid #ddd;width:50%;margin:0 auto;border-collapse:collapse}table>thead>tr>th,table>thead>tr>td{background:#f8f0f0;cursor:pointer}table>thead>tr>th,table>thead>tr>td,table>tbody>tr>td,table>tfoot>tr>td{padding:8px;vertical-align:top;border:1px solid #ddd}table>thead>tr>th,table>thead>tr>td{vertical-align:bottom;border-bottom:2px solid #ddd;text-align:left}table>thead>tr>th.asc,table>thead>tr>td.asc{text-decoration:overline}table>thead>tr>th.desc,table>thead>tr>td.desc{text-decoration:underline}</style>
+
+        <table>
+           <thead>
+               <tr>
+                   <template repeat="{{label in dataStructure.headArray}}">
+                       <!-- theadCell variable -->
+                       <th>{{label}}</th>
+                   </template>
+               </tr>
+           </thead>
+           <tbody>
+               <template repeat="{{row in dataStructure.bodyArray}}">
+                   <tr>
+                       <template repeat="{{cell in row}}">
+                           <td>{{cell}}</td>
+                       </template>
+                   </tr>
+               </template>
+           </tbody>
+       </table>
+    </template>
+    <script>Polymer("csv-preview",{theadCell:"th",sortAscClass:"asc",sortDescClass:"desc",ready:function(){this.init();this.initSort()},dataChanged:function(){if(this.data){this.clearSortClasses();this.parseData(this.data)}},sortData:function(colNumber,reverse){reverse=-(+reverse||-1);this.dataStructure.bodyArray.sort(function(a,b){return reverse*a[colNumber].localeCompare(b[colNumber])})},clearSortClasses:function(){var tHeadTh=this.shadowRoot.querySelectorAll("thead th"),tHeadThLength=tHeadTh.length;if(tHeadThLength){for(var i=0;i<tHeadThLength;i++){tHeadTh[i].className=""}}},initSort:function(){var tHead=this.shadowRoot.querySelector("thead");var eventCallback=function(node){var colNumber,childs=node.parentNode.querySelectorAll(this.theadCell),childsLength=childs.length;for(var i=0;i<childsLength;i++){if(node==childs[i]){colNumber=i}childs[i].className=""}if(this.clickedColNumber===colNumber){this.tick=0;this.clickedColNumber=null}else{this.tick=1;this.clickedColNumber=colNumber}node.className=this.tick%2?this.sortDescClass:this.sortAscClass;this.sortData(colNumber,this.tick%2)}.bind(this);if(window.addEventListener){tHead.addEventListener("click",function(e){eventCallback(e.target);e.preventDefault()})}else{tHead.attachEvent("onclick",function(e){eventCallback(e.target);e.preventDefault()})}},init:function(){this.tick=0;this.clickedColNumber=undefined;this.dataStructure={tbody:undefined,theadTr:undefined,headArray:[],bodyArray:[]};var table=document.createElement("table"),thead=document.createElement("thead"),theadTr=document.createElement("tr"),tbody=document.createElement("tbody"),tfoot=document.createElement("tfoot");thead.appendChild(theadTr);table.appendChild(thead);table.appendChild(tbody);table.appendChild(tfoot);this.dataStructure.tbody=tbody;this.dataStructure.theadTr=theadTr},parseData:function(input){if(input){if(!Array.isArray(input)){var csvRaw=input.split("\n");var csv=csvRaw.filter(function(el){return!!el});var csvLength=csv.length;if(csvLength>1){this.dataStructure.headArray=csv[0].split(",");this.dataStructure.bodyArray=[];var rowsCnt=csvLength-1;var colsCnt=this.dataStructure.headArray.length;for(var i=1;i<=rowsCnt;i++){this.dataStructure.bodyArray[i]=csv[i].split(",");if(this.dataStructure.bodyArray[i].length<colsCnt){for(var j=this.dataStructure.bodyArray[i].length;j<colsCnt;j++){this.dataStructure.bodyArray[i][j]=""}}else{this.dataStructure.bodyArray[i].length=colsCnt}}}}else{this.dataStructure.bodyArray=[];this.dataStructure.headArray=[];for(i in input){var row=input[i];var rowArray=[];for(key in row){if(i==0){this.dataStructure.headArray.push(key)}rowArray.push(row[key])}this.dataStructure.bodyArray.push(rowArray)}}}}});</script>
+</polymer-element>
+
+
+
+<polymer-element name="th-csv" attributes="url filter_row_from filter_row_to filter_col_from filter_col_to data filteredData chartDataOutput" thelma="" assetpath="../bower_components/thelma-data/">
+
+  <template>
+  </template>
+  
+
+
+  <script src="../bower_components/d3/d3.min.js"></script> 
+  <script>Polymer("th-csv",{url:"",data:null,filteredData:null,filter_row_from:-1,filter_row_to:-1,filter_col_from:-1,filter_col_to:-1,chartDataOutput:[],observe:{filter_row_from:"filterCsv",filter_row_to:"filterCsv",filter_col_from:"filterCsv",filter_col_to:"filterCsv"},ready:function(){var self=this;console.log("de csv");console.log(this.url)},urlChanged:function(){var self=this;var corsurl=self.url.replace(/(ftp|http|https):\/\//,"http://www.corsproxy.com/");d3.csv(corsurl,function(d){self.data=d;self.filterCsv()})},filterCsv:function(){var self=this;if(self.data){if(self.filter_row_from>0||self.filter_row_to>0||self.filter_col_from>0||self.filter_col_to>0){var from=self.filter_row_from>0?self.filter_row_from:1;var to=self.filter_row_to>0?self.filter_row_to:self.data.length+1;var fromCol=self.filter_col_from>0?self.filter_col_from:1;var toCol=self.filter_col_to>0?self.filter_col_to:self.data.length+1;console.log(fromCol);self.filteredData=self.data.filter(function(d,i){if(i+1>=from&&i+1<=to){console.log(i);return d}});self.filteredData=self.filteredData.map(function(d,i){var copy={};var colIndex=0;for(key in d){if(colIndex+1>=fromCol&&colIndex+1<=toCol){copy[key]=d[key]}colIndex++}console.log(copy);return copy})}else{self.filteredData=self.data}self.createChartData()}},createChartData:function(){var self=this;self.chartDataOutput=[];var firstRow=self.filteredData[0];for(key in firstRow){self.chartDataOutput.push({label:key,value:firstRow[key]})}console.log(self.chartDataOutput)},getMetaData:function(){return{name:"th-csv",description:"Fetches CSV from a source plus ability to filter rows/columns ",category:"data",version:"0.0.1",thumbnail:"csv.jpg",tags:["csv","data"],inputAttr:{url:{friendly:"URL",type:"String","default":"",hint:"http://sepans.com/misc/test.csv"},filter_row_from:{friendly:"Filter Rows From Index",type:"int","default":0},filter_row_to:{friendly:"Filter Rows To Index",type:"int","default":0},filter_col_from:{friendly:"Filter Columns From Index",type:"int","default":0},filter_col_to:{friendly:"Filter Columns To Index",type:"int","default":0}},outputAttr:{data:{friendly:"Data",type:"json"},filteredData:{friendly:"Data after filtering",type:"json"},chartDataOutput:{friendly:"Data for chart",type:"json"}}}}});</script>
+</polymer-element></div><div hidden>
+
+
+<polymer-element name="th-basic-function" attributes="dataIn dataOut functionName chartDataOutput" thelma="" assetpath="../bower_components/thelma-data/">
+
+  <template>
+  </template>
+  
+
+
+  <script src="../bower_components/d3/d3.min.js"></script> 
+  <script>Polymer("th-basic-function",{dataIn:null,dataOut:null,chartDataOutput:null,functionName:"sum",ready:function(){var self=this;console.log("function");if(self.dataIn!=null){self.calculate()}},dataInChanged:function(){var self=this;self.calculate()},functionNameChanged:function(){var self=this;self.calculate()},calculate:function(){var self=this;console.log(self.dataIn);var result={};for(i in self.dataIn){var row=self.dataIn[i];var rowArray=[];for(key in row){if(result[key]===undefined){result[key]=parseFloat(row[key])}else{result[key]+=parseFloat(row[key])}}}console.log(result);self.dataOut=[result];self.createChartData()},createChartData:function(){var self=this;self.chartDataOutput=[];var firstRow=self.dataOut[0];for(key in firstRow){self.chartDataOutput.push({label:key,value:firstRow[key]})}console.log(self.chartDataOutput)},getMetaData:function(){return{name:"th-csv",description:"Fetches CSV from a source plus ability to filter rows/columns ",category:"data",version:"0.0.1",thumbnail:"csv.jpg",tags:["csv","data"],inputAttr:{url:{friendly:"URL",type:"String","default":"",hint:"http://sepans.com/misc/test.csv"},filter_row_from:{friendly:"Filter Rows From Index",type:"int","default":0},filter_row_to:{friendly:"Filter Rows To Index",type:"int","default":0},filter_col_from:{friendly:"Filter Columns From Index",type:"int","default":0},filter_col_to:{friendly:"Filter Columns To Index",type:"int","default":0}},outputAttr:{data:{friendly:"Data",type:"json"},filteredData:{friendly:"Data after filtering",type:"json"},chartDataOutput:{friendly:"Data for chart",type:"json"}}}}});</script>
+</polymer-element></div>
